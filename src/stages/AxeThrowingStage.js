@@ -52,6 +52,9 @@ export class AxeThrowingStage extends BaseStage {
     this.createScoreboard();
     this.createPlayerUI();
 
+    // Back button to return to stage select
+    this.createBackButton();
+
     // Start first round
     this.time.delayedCall(500, () => this.startRound());
   }
@@ -171,9 +174,11 @@ export class AxeThrowingStage extends BaseStage {
     this.add.rectangle(80, GAME_HEIGHT / 2, 30, 300, 0x333333)
       .setStrokeStyle(2, 0x666666);
 
-    // Power bar fill (grows as player holds)
-    this.powerBar = this.add.rectangle(80, GAME_HEIGHT / 2 + 150, 26, 0, 0x4ecca3);
-    this.powerBar.setOrigin(0.5, 1);
+    // Power bar fill (grows upward from bottom)
+    this.powerBarMaxHeight = 296;
+    this.powerBarBottom = GAME_HEIGHT / 2 + 148;
+    this.powerBar = this.add.rectangle(80, this.powerBarBottom, 26, 0, 0x4ecca3);
+    this.powerBar.setOrigin(0.5, 0);
 
     // Power label
     this.add.text(80, GAME_HEIGHT / 2 + 170, 'POWER', {
@@ -245,7 +250,9 @@ export class AxeThrowingStage extends BaseStage {
     // Charge power bar while holding
     if (this.isPowerCharging) {
       this.powerLevel = Math.min(this.powerLevel + 1.5, 100);
-      this.powerBar.height = (this.powerLevel / 100) * 296;
+      const barHeight = (this.powerLevel / 100) * this.powerBarMaxHeight;
+      this.powerBar.height = barHeight;
+      this.powerBar.y = this.powerBarBottom - barHeight;
 
       // Color changes with power
       if (this.powerLevel < 40) {
@@ -316,6 +323,7 @@ export class AxeThrowingStage extends BaseStage {
     this.aimCrosshair.setVisible(false);
     this.isPowerCharging = false;
     this.powerBar.height = 0;
+    this.powerBar.y = this.powerBarBottom;
 
     // Create axe projectile
     const startX = PLAYER_THROW_X + 50;
@@ -356,14 +364,25 @@ export class AxeThrowingStage extends BaseStage {
         onComplete: () => this.onAxeLanded(axe, landX, landY, isComputer),
       });
     } else {
-      // Player gets normal physics arc
-      this.tweens.timeline({
+      // Player gets normal physics arc (two-step chained tweens)
+      this.tweens.add({
         targets: axe,
-        tweens: [
-          { x: midX, y: midY, angle: 180, duration: 300, ease: 'Sine.easeOut' },
-          { x: landX, y: landY, angle: 360, duration: 300, ease: 'Sine.easeIn' },
-        ],
-        onComplete: () => this.onAxeLanded(axe, landX, landY, isComputer),
+        x: midX,
+        y: midY,
+        angle: 180,
+        duration: 300,
+        ease: 'Sine.easeOut',
+        onComplete: () => {
+          this.tweens.add({
+            targets: axe,
+            x: landX,
+            y: landY,
+            angle: 360,
+            duration: 300,
+            ease: 'Sine.easeIn',
+            onComplete: () => this.onAxeLanded(axe, landX, landY, isComputer),
+          });
+        },
       });
     }
   }
