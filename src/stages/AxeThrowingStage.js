@@ -49,6 +49,7 @@ export class AxeThrowingStage extends BaseStage {
     this.isPlayerTurn = true;
     this.isThrowInProgress = false;
     this.powerLevel = 0;
+    this.powerDirection = 1; // 1 = going up, -1 = going down
     this.isPowerCharging = false;
     this.gameMode = MODE_PRACTICE;
     this.practiceThrows = 0;
@@ -237,6 +238,7 @@ export class AxeThrowingStage extends BaseStage {
       if (!this.isPowerCharging) {
         this.isPowerCharging = true;
         this.powerLevel = 0;
+        this.powerDirection = 1;
         this.throwBtnText.setText('STOP');
         this.throwBtn.setFillStyle(0xe94560);
       } else {
@@ -320,6 +322,7 @@ export class AxeThrowingStage extends BaseStage {
         // Start charging
         this.isPowerCharging = true;
         this.powerLevel = 0;
+        this.powerDirection = 1;
         this.throwBtnText.setText('STOP');
         this.throwBtn.setFillStyle(0xe94560);
       } else {
@@ -392,9 +395,16 @@ export class AxeThrowingStage extends BaseStage {
   }
 
   update() {
-    // Charge power bar while charging
+    // Charge power bar while charging — bounces up and down
     if (this.isPowerCharging) {
-      this.powerLevel = Math.min(this.powerLevel + 1.5, 100);
+      this.powerLevel += 1.5 * this.powerDirection;
+      if (this.powerLevel >= 100) {
+        this.powerLevel = 100;
+        this.powerDirection = -1;
+      } else if (this.powerLevel <= 0) {
+        this.powerLevel = 0;
+        this.powerDirection = 1;
+      }
       const barHeight = (this.powerLevel / 100) * this.powerBarMaxHeight;
       this.powerBar.height = barHeight;
       this.powerBar.y = this.powerBarBottom - barHeight;
