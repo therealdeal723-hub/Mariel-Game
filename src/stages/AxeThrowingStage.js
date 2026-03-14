@@ -217,6 +217,36 @@ export class AxeThrowingStage extends BaseStage {
       color: '#4ecca3',
     }).setOrigin(0.5);
 
+    // Mobile throw button (below power bar)
+    this.throwBtn = this.add.rectangle(80, GAME_HEIGHT / 2 + 210, 70, 36, 0x4ecca3, 0.9)
+      .setStrokeStyle(2, 0xffffff)
+      .setInteractive({ useHandCursor: true });
+    this.throwBtnText = this.add.text(80, GAME_HEIGHT / 2 + 210, 'THROW', {
+      fontFamily: 'Arial',
+      fontSize: '13px',
+      color: '#1a1a2e',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    this.throwBtn.on('pointerover', () => this.throwBtn.setFillStyle(0x6eeec3));
+    this.throwBtn.on('pointerout', () => this.throwBtn.setFillStyle(0x4ecca3));
+    this.throwBtn.on('pointerdown', (pointer) => {
+      // Stop event from also triggering aimLine pointermove
+      pointer.event.stopPropagation();
+      if (!this.canPlayerAct()) return;
+      if (!this.isPowerCharging) {
+        this.isPowerCharging = true;
+        this.powerLevel = 0;
+        this.throwBtnText.setText('STOP');
+        this.throwBtn.setFillStyle(0xe94560);
+      } else {
+        this.isPowerCharging = false;
+        this.throwBtnText.setText('THROW');
+        this.throwBtn.setFillStyle(0x4ecca3);
+        this.throwAxe(this.aimX, this.aimY, this.powerLevel);
+      }
+    });
+
     // Aim crosshair (follows mouse)
     this.aimCrosshair = this.add.graphics();
     this.aimCrosshair.lineStyle(2, 0x4ecca3, 0.8);
@@ -290,9 +320,13 @@ export class AxeThrowingStage extends BaseStage {
         // Start charging
         this.isPowerCharging = true;
         this.powerLevel = 0;
+        this.throwBtnText.setText('STOP');
+        this.throwBtn.setFillStyle(0xe94560);
       } else {
         // Stop charging and throw
         this.isPowerCharging = false;
+        this.throwBtnText.setText('THROW');
+        this.throwBtn.setFillStyle(0x4ecca3);
         this.throwAxe(this.aimX, this.aimY, this.powerLevel);
       }
     });
@@ -303,32 +337,62 @@ export class AxeThrowingStage extends BaseStage {
   }
 
   drawAimLine() {
-    if (!this.canPlayerAct()) return;
+    if (!this.canPlayerAct() && !this.isPowerCharging) return;
 
     this.aimLine.clear();
     this.aimLine.setVisible(true);
 
-    // Draw dotted arc from player to aim point
     const startX = PLAYER_THROW_X + 50;
     const startY = PLAYER_THROW_Y;
-    const endX = this.aimX;
-    const endY = this.aimY;
 
-    // Draw dots along a parabolic arc
-    this.aimLine.fillStyle(0x4ecca3, 0.4);
-    const steps = 12;
+    // When charging, show where the axe will actually land at current power
+    const powerFraction = this.isPowerCharging
+      ? Math.max(this.powerLevel / 100, 0.1)
+      : 1.0;
+
+    const endX = startX + (this.aimX - startX) * powerFraction;
+    const endY = startY + (this.aimY - startY) * powerFraction;
+
+    // Choose color based on power state
+    let dotColor, dotAlpha;
+    if (!this.isPowerCharging) {
+      // Not charging yet: show full-power preview in teal
+      dotColor = 0x4ecca3;
+      dotAlpha = 0.3;
+    } else if (this.powerLevel < 40) {
+      dotColor = 0x4ecca3;
+      dotAlpha = 0.7;
+    } else if (this.powerLevel < 75) {
+      dotColor = 0xffd700;
+      dotAlpha = 0.7;
+    } else {
+      dotColor = 0xe94560;
+      dotAlpha = 0.7;
+    }
+
+    // Draw dots along a parabolic arc to the landing point
+    const arcHeight = this.isPowerCharging ? (80 + this.powerLevel * 1.2) : 150;
+    const steps = 14;
+
+    this.aimLine.fillStyle(dotColor, dotAlpha);
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
       const x = startX + (endX - startX) * t;
-      // Parabolic arc: peaks at midpoint
-      const arcHeight = 150;
       const y = startY + (endY - startY) * t - arcHeight * 4 * t * (1 - t);
-      this.aimLine.fillCircle(x, y, 2);
+      const dotSize = (i === steps) ? 5 : 2; // Bigger dot at landing point
+      this.aimLine.fillCircle(x, y, dotSize);
+    }
+
+    // Draw a small X at the landing point during charging
+    if (this.isPowerCharging) {
+      this.aimLine.lineStyle(2, dotColor, 0.9);
+      this.aimLine.lineBetween(endX - 6, endY - 6, endX + 6, endY + 6);
+      this.aimLine.lineBetween(endX - 6, endY + 6, endX + 6, endY - 6);
     }
   }
 
   update() {
-    // Charge power bar while spacebar is held
+    // Charge power bar while charging
     if (this.isPowerCharging) {
       this.powerLevel = Math.min(this.powerLevel + 1.5, 100);
       const barHeight = (this.powerLevel / 100) * this.powerBarMaxHeight;
@@ -343,6 +407,9 @@ export class AxeThrowingStage extends BaseStage {
       } else {
         this.powerBar.setFillStyle(0xe94560);
       }
+
+      // Redraw arc to show where axe will land at current power
+      this.drawAimLine();
     }
   }
 
@@ -359,7 +426,7 @@ export class AxeThrowingStage extends BaseStage {
     this.roundText.setText('PRACTICE MODE');
     this.roundText.setY(75);
 
-    this.instructionText.setText('Aim with mouse \u2022 SPACE to charge & throw \u2022 Practice first!');
+    this.instructionText.setText('Aim \u2022 SPACE or THROW button to charge & release \u2022 Practice first!');
     this.aimCrosshair.setVisible(true);
     this.commentaryText.setText('');
 
@@ -413,7 +480,7 @@ export class AxeThrowingStage extends BaseStage {
     this.isPlayerTurn = true;
     this.isThrowInProgress = false;
     this.aimCrosshair.setVisible(true);
-    this.instructionText.setText('Aim with mouse \u2022 SPACE to charge, SPACE again to throw!');
+    this.instructionText.setText('Aim \u2022 SPACE or THROW button to charge & release!');
     this.commentaryText.setText('');
 
     // Show player sprite
