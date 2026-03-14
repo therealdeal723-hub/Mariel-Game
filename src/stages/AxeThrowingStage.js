@@ -15,8 +15,8 @@ const INNER_RADIUS = 45;
 const OUTER_RADIUS = 80;
 const BOARD_RADIUS = 110;
 
-// Funny commentary for the computer's ridiculous throws
-const COMPUTER_COMMENTARY = [
+// Funny commentary for Nick's ridiculous throws
+const NICK_COMMENTARY = [
   '"Behind the back throw!"',
   '"No-look shot!"',
   '"Triple spin!"',
@@ -24,13 +24,17 @@ const COMPUTER_COMMENTARY = [
   '"Bounced off the ceiling!"',
 ];
 
-const COMPUTER_CELEBRATIONS = [
+const NICK_CELEBRATIONS = [
   '*flexes dramatically*',
   '*moonwalks*',
   '*air guitar solo*',
   '*blows on fingers like a gun*',
   '*victory dance*',
 ];
+
+// Game modes
+const MODE_PRACTICE = 'practice';
+const MODE_GAME = 'game';
 
 export class AxeThrowingStage extends BaseStage {
   constructor() {
@@ -40,12 +44,18 @@ export class AxeThrowingStage extends BaseStage {
   create() {
     // Game state
     this.playerScore = 0;
-    this.computerScore = 0;
+    this.nickScore = 0;
     this.currentRound = 0;
     this.isPlayerTurn = true;
     this.isThrowInProgress = false;
     this.powerLevel = 0;
     this.isPowerCharging = false;
+    this.gameMode = MODE_PRACTICE;
+    this.practiceThrows = 0;
+
+    // Track where the mouse is aiming
+    this.aimX = TARGET_X;
+    this.aimY = TARGET_Y;
 
     this.createBackground();
     this.createTarget();
@@ -55,8 +65,8 @@ export class AxeThrowingStage extends BaseStage {
     // Back button to return to stage select
     this.createBackButton();
 
-    // Start first round
-    this.time.delayedCall(500, () => this.startRound());
+    // Start in practice mode
+    this.startPracticeMode();
   }
 
   createBackground() {
@@ -113,10 +123,10 @@ export class AxeThrowingStage extends BaseStage {
 
   createScoreboard() {
     // Scoreboard background
-    this.add.rectangle(GAME_WIDTH / 2, 75, 500, 55, 0x000000, 0.6);
+    this.scoreboardBg = this.add.rectangle(GAME_WIDTH / 2, 75, 500, 55, 0x000000, 0.6);
 
     // Player score
-    this.add.text(GAME_WIDTH / 2 - 140, 63, 'Mariel', {
+    this.playerLabel = this.add.text(GAME_WIDTH / 2 - 140, 63, 'Mariel', {
       fontFamily: 'Georgia, serif',
       fontSize: '16px',
       color: '#4ecca3',
@@ -131,22 +141,22 @@ export class AxeThrowingStage extends BaseStage {
     }).setOrigin(0.5);
 
     // VS
-    this.add.text(GAME_WIDTH / 2, 75, 'VS', {
+    this.vsText = this.add.text(GAME_WIDTH / 2, 75, 'VS', {
       fontFamily: 'Georgia, serif',
       fontSize: '18px',
       color: '#ffd700',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    // Computer score
-    this.add.text(GAME_WIDTH / 2 + 140, 63, 'Computer', {
+    // Nick score
+    this.nickLabel = this.add.text(GAME_WIDTH / 2 + 140, 63, 'Nick', {
       fontFamily: 'Georgia, serif',
       fontSize: '16px',
       color: '#e94560',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    this.computerScoreText = this.add.text(GAME_WIDTH / 2 + 140, 85, '0', {
+    this.nickScoreText = this.add.text(GAME_WIDTH / 2 + 140, 85, '0', {
       fontFamily: 'Georgia, serif',
       fontSize: '22px',
       color: '#ffffff',
@@ -160,13 +170,26 @@ export class AxeThrowingStage extends BaseStage {
       color: '#aaaaaa',
     }).setOrigin(0.5);
 
-    // Commentary text (for computer's ridiculous moves)
+    // Commentary text (for Nick's ridiculous moves)
     this.commentaryText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 30, '', {
       fontFamily: 'Georgia, serif',
       fontSize: '16px',
       color: '#ffd700',
       fontStyle: 'italic',
     }).setOrigin(0.5);
+
+    // Hide scoreboard during practice
+    this.setScoreboardVisible(false);
+  }
+
+  setScoreboardVisible(visible) {
+    this.scoreboardBg.setVisible(visible);
+    this.playerLabel.setVisible(visible);
+    this.playerScoreText.setVisible(visible);
+    this.vsText.setVisible(visible);
+    this.nickLabel.setVisible(visible);
+    this.nickScoreText.setVisible(visible);
+    this.roundText.setVisible(visible);
   }
 
   createPlayerUI() {
@@ -187,6 +210,13 @@ export class AxeThrowingStage extends BaseStage {
       color: '#aaaaaa',
     }).setOrigin(0.5);
 
+    // Spacebar hint
+    this.spaceHint = this.add.text(80, GAME_HEIGHT / 2 - 170, 'SPACE', {
+      fontFamily: 'Arial',
+      fontSize: '11px',
+      color: '#4ecca3',
+    }).setOrigin(0.5);
+
     // Aim crosshair (follows mouse)
     this.aimCrosshair = this.add.graphics();
     this.aimCrosshair.lineStyle(2, 0x4ecca3, 0.8);
@@ -194,6 +224,10 @@ export class AxeThrowingStage extends BaseStage {
     this.aimCrosshair.lineBetween(-18, 0, 18, 0);
     this.aimCrosshair.lineBetween(0, -18, 0, 18);
     this.aimCrosshair.setVisible(false);
+
+    // Aim line (shows trajectory preview)
+    this.aimLine = this.add.graphics();
+    this.aimLine.setVisible(false);
 
     // Instruction text
     this.instructionText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 80, '', {
@@ -211,43 +245,90 @@ export class AxeThrowingStage extends BaseStage {
       color: '#4ecca3',
     }).setOrigin(0.5);
 
-    // Computer character placeholder
-    this.computerSprite = this.add.rectangle(PLAYER_THROW_X, PLAYER_THROW_Y + 100, 40, 70, 0xe94560)
+    // Nick character placeholder
+    this.nickSprite = this.add.rectangle(PLAYER_THROW_X, PLAYER_THROW_Y + 100, 40, 70, 0xe94560)
       .setStrokeStyle(2, 0xffffff);
-    this.computerSprite.setVisible(false);
-    this.computerLabel = this.add.text(PLAYER_THROW_X, PLAYER_THROW_Y + 40, 'Computer', {
+    this.nickSprite.setVisible(false);
+    this.nickSpriteLabel = this.add.text(PLAYER_THROW_X, PLAYER_THROW_Y + 40, 'Nick', {
       fontFamily: 'Georgia, serif',
       fontSize: '12px',
       color: '#e94560',
     }).setOrigin(0.5).setVisible(false);
 
-    // Input handling
+    // "Start Game" button (shown during practice)
+    this.startGameBtn = this.add.rectangle(GAME_WIDTH / 2, 140, 200, 45, 0x4ecca3, 0.9)
+      .setStrokeStyle(2, 0xffffff)
+      .setInteractive({ useHandCursor: true });
+    this.startGameBtnText = this.add.text(GAME_WIDTH / 2, 140, 'Start Game!', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '18px',
+      color: '#1a1a2e',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.startGameBtn.on('pointerover', () => this.startGameBtn.setFillStyle(0x6eeec3));
+    this.startGameBtn.on('pointerout', () => this.startGameBtn.setFillStyle(0x4ecca3));
+    this.startGameBtn.on('pointerdown', () => this.startActualGame());
+    this.startGameBtn.setVisible(false);
+    this.startGameBtnText.setVisible(false);
+
+    // Input handling - mouse moves the crosshair/aim
     this.input.on('pointermove', (pointer) => {
-      if (this.isPlayerTurn && !this.isThrowInProgress) {
-        this.aimCrosshair.setPosition(
-          Phaser.Math.Clamp(pointer.x, TARGET_X - BOARD_RADIUS, TARGET_X + BOARD_RADIUS),
-          Phaser.Math.Clamp(pointer.y, TARGET_Y - BOARD_RADIUS, TARGET_Y + BOARD_RADIUS)
-        );
+      if (this.canPlayerAct()) {
+        this.aimX = Phaser.Math.Clamp(pointer.x, TARGET_X - BOARD_RADIUS * 1.5, TARGET_X + BOARD_RADIUS * 1.5);
+        this.aimY = Phaser.Math.Clamp(pointer.y, TARGET_Y - BOARD_RADIUS * 1.5, TARGET_Y + BOARD_RADIUS * 1.5);
+        this.aimCrosshair.setPosition(this.aimX, this.aimY);
+        this.drawAimLine();
       }
     });
 
-    this.input.on('pointerdown', () => {
-      if (this.isPlayerTurn && !this.isThrowInProgress) {
+    // Spacebar for power
+    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+    this.spaceKey.on('down', () => {
+      if (!this.canPlayerAct()) return;
+      if (!this.isPowerCharging) {
+        // Start charging
         this.isPowerCharging = true;
         this.powerLevel = 0;
-      }
-    });
-
-    this.input.on('pointerup', (pointer) => {
-      if (this.isPowerCharging && this.isPlayerTurn) {
+      } else {
+        // Stop charging and throw
         this.isPowerCharging = false;
-        this.throwAxe(pointer.x, pointer.y, this.powerLevel);
+        this.throwAxe(this.aimX, this.aimY, this.powerLevel);
       }
     });
   }
 
+  canPlayerAct() {
+    return (this.isPlayerTurn || this.gameMode === MODE_PRACTICE) && !this.isThrowInProgress;
+  }
+
+  drawAimLine() {
+    if (!this.canPlayerAct()) return;
+
+    this.aimLine.clear();
+    this.aimLine.setVisible(true);
+
+    // Draw dotted arc from player to aim point
+    const startX = PLAYER_THROW_X + 50;
+    const startY = PLAYER_THROW_Y;
+    const endX = this.aimX;
+    const endY = this.aimY;
+
+    // Draw dots along a parabolic arc
+    this.aimLine.fillStyle(0x4ecca3, 0.4);
+    const steps = 12;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const x = startX + (endX - startX) * t;
+      // Parabolic arc: peaks at midpoint
+      const arcHeight = 150;
+      const y = startY + (endY - startY) * t - arcHeight * 4 * t * (1 - t);
+      this.aimLine.fillCircle(x, y, 2);
+    }
+  }
+
   update() {
-    // Charge power bar while holding
+    // Charge power bar while spacebar is held
     if (this.isPowerCharging) {
       this.powerLevel = Math.min(this.powerLevel + 1.5, 100);
       const barHeight = (this.powerLevel / 100) * this.powerBarMaxHeight;
@@ -265,6 +346,53 @@ export class AxeThrowingStage extends BaseStage {
     }
   }
 
+  // ─── Practice Mode ────────────────────────────────────────
+
+  startPracticeMode() {
+    this.gameMode = MODE_PRACTICE;
+    this.isPlayerTurn = true;
+    this.isThrowInProgress = false;
+    this.practiceThrows = 0;
+
+    this.setScoreboardVisible(false);
+    this.roundText.setVisible(true);
+    this.roundText.setText('PRACTICE MODE');
+    this.roundText.setY(75);
+
+    this.instructionText.setText('Aim with mouse \u2022 SPACE to charge & throw \u2022 Practice first!');
+    this.aimCrosshair.setVisible(true);
+    this.commentaryText.setText('');
+
+    // Show start game button after a brief moment
+    this.time.delayedCall(500, () => {
+      this.startGameBtn.setVisible(true);
+      this.startGameBtnText.setVisible(true);
+    });
+  }
+
+  startActualGame() {
+    this.gameMode = MODE_GAME;
+    this.playerScore = 0;
+    this.nickScore = 0;
+    this.currentRound = 0;
+    this.isPlayerTurn = true;
+
+    // Hide practice UI
+    this.startGameBtn.setVisible(false);
+    this.startGameBtnText.setVisible(false);
+
+    // Show scoreboard
+    this.setScoreboardVisible(true);
+    this.roundText.setY(108);
+    this.playerScoreText.setText('0');
+    this.nickScoreText.setText('0');
+
+    // Start first round
+    this.time.delayedCall(300, () => this.startRound());
+  }
+
+  // ─── Game Mode ────────────────────────────────────────────
+
   startRound() {
     this.currentRound++;
     this.roundText.setText(`Round ${this.currentRound} of ${TOTAL_ROUNDS}`);
@@ -277,7 +405,7 @@ export class AxeThrowingStage extends BaseStage {
     if (this.isPlayerTurn) {
       this.startPlayerTurn();
     } else {
-      this.startComputerTurn();
+      this.startNickTurn();
     }
   }
 
@@ -285,92 +413,108 @@ export class AxeThrowingStage extends BaseStage {
     this.isPlayerTurn = true;
     this.isThrowInProgress = false;
     this.aimCrosshair.setVisible(true);
-    this.instructionText.setText('Hold to charge power, release to throw!');
+    this.instructionText.setText('Aim with mouse \u2022 SPACE to charge, SPACE again to throw!');
     this.commentaryText.setText('');
 
     // Show player sprite
     this.playerSprite.setVisible(true);
-    this.computerSprite.setVisible(false);
-    this.computerLabel.setVisible(false);
+    this.nickSprite.setVisible(false);
+    this.nickSpriteLabel.setVisible(false);
+
+    this.drawAimLine();
   }
 
-  startComputerTurn() {
+  startNickTurn() {
     this.isPlayerTurn = false;
     this.isThrowInProgress = true;
     this.aimCrosshair.setVisible(false);
-    this.instructionText.setText("Computer's turn...");
+    this.aimLine.setVisible(false);
+    this.instructionText.setText("Nick's turn...");
 
-    // Show computer sprite
+    // Show Nick sprite
     this.playerSprite.setVisible(false);
-    this.computerSprite.setVisible(true);
-    this.computerLabel.setVisible(true);
+    this.nickSprite.setVisible(true);
+    this.nickSpriteLabel.setVisible(true);
 
     // Dramatic pause, then ridiculous throw
-    const commentary = COMPUTER_COMMENTARY[this.currentRound - 1] ||
-      COMPUTER_COMMENTARY[Phaser.Math.Between(0, COMPUTER_COMMENTARY.length - 1)];
+    const commentary = NICK_COMMENTARY[this.currentRound - 1] ||
+      NICK_COMMENTARY[Phaser.Math.Between(0, NICK_COMMENTARY.length - 1)];
     this.commentaryText.setText(commentary);
 
     this.time.delayedCall(1500, () => {
-      // Computer always hits near bullseye (comically precise)
+      // Nick always hits near bullseye (comically precise)
       const offsetX = Phaser.Math.Between(-10, 10);
       const offsetY = Phaser.Math.Between(-10, 10);
       this.throwAxe(TARGET_X + offsetX, TARGET_Y + offsetY, 100, true);
     });
   }
 
-  throwAxe(targetX, targetY, power, isComputer = false) {
+  throwAxe(targetX, targetY, power, isNick = false) {
     this.isThrowInProgress = true;
     this.aimCrosshair.setVisible(false);
+    this.aimLine.setVisible(false);
     this.isPowerCharging = false;
     this.powerBar.height = 0;
     this.powerBar.y = this.powerBarBottom;
 
     // Create axe projectile
     const startX = PLAYER_THROW_X + 50;
-    const startY = isComputer ? PLAYER_THROW_Y + 100 : PLAYER_THROW_Y;
-    const axeColor = isComputer ? 0xe94560 : 0x4ecca3;
+    const startY = isNick ? PLAYER_THROW_Y + 100 : PLAYER_THROW_Y;
+    const axeColor = isNick ? 0xe94560 : 0x4ecca3;
 
     const axe = this.add.rectangle(startX, startY, 16, 30, axeColor)
       .setStrokeStyle(2, 0xffffff);
 
-    // Calculate landing position based on aim and power
-    const accuracy = isComputer ? 1.0 : Math.min(power / 100, 1.0);
+    // Power determines how far along the trajectory the axe goes.
+    // At 100% power, it lands exactly at the aim point.
+    // Less power = falls short (interpolates between start and aim).
+    const powerFraction = Math.max(power / 100, 0.1);
+
     let landX, landY;
 
-    if (isComputer) {
-      // Computer: comically accurate, sometimes with absurd trajectory
+    if (isNick) {
+      // Nick: comically accurate
       landX = targetX;
       landY = targetY;
     } else {
-      // Player: accuracy affected by power level
-      const spreadFactor = (1 - accuracy) * 80;
-      landX = targetX + Phaser.Math.Between(-spreadFactor, spreadFactor);
-      landY = targetY + Phaser.Math.Between(-spreadFactor, spreadFactor);
+      // Player: power determines how far the axe reaches toward the aim point.
+      // Low power = falls short, 100% power = lands on aim point.
+      landX = startX + (targetX - startX) * powerFraction;
+      landY = startY + (targetY - startY) * powerFraction;
+
+      // Add slight random spread that increases at extreme power levels
+      const spread = power > 90 ? 8 : (power < 20 ? 12 : 4);
+      landX += Phaser.Math.Between(-spread, spread);
+      landY += Phaser.Math.Between(-spread, spread);
     }
 
-    // Animate the throw
-    const midX = (startX + landX) / 2;
-    const midY = Math.min(startY, landY) - 100 - (power * 1.5); // Arc height
+    // Animate the throw as an arc
+    // Arc height scales with power
+    const arcHeight = 80 + power * 1.2;
+    const duration = isNick ? 800 : 350 + (1 - powerFraction) * 200;
 
-    if (isComputer) {
-      // Computer gets ridiculous trajectory — curves, loops, etc.
+    if (isNick) {
+      // Nick gets ridiculous trajectory — curves, loops, etc.
       this.tweens.add({
         targets: axe,
         x: landX,
         y: landY,
         angle: 1080, // Triple spin!
-        duration: 800,
+        duration: duration,
         ease: 'Power2',
-        onComplete: () => this.onAxeLanded(axe, landX, landY, isComputer),
+        onComplete: () => this.onAxeLanded(axe, landX, landY, isNick),
       });
     } else {
-      // Player gets normal physics arc (two-step chained tweens)
+      // Player: two-part arc using midpoint
+      const midX = (startX + landX) / 2;
+      const midY = Math.min(startY, landY) - arcHeight;
+
       this.tweens.add({
         targets: axe,
         x: midX,
         y: midY,
         angle: 180,
-        duration: 300,
+        duration: duration * 0.5,
         ease: 'Sine.easeOut',
         onComplete: () => {
           this.tweens.add({
@@ -378,16 +522,16 @@ export class AxeThrowingStage extends BaseStage {
             x: landX,
             y: landY,
             angle: 360,
-            duration: 300,
+            duration: duration * 0.5,
             ease: 'Sine.easeIn',
-            onComplete: () => this.onAxeLanded(axe, landX, landY, isComputer),
+            onComplete: () => this.onAxeLanded(axe, landX, landY, isNick),
           });
         },
       });
     }
   }
 
-  onAxeLanded(axe, x, y, isComputer) {
+  onAxeLanded(axe, x, y, isNick) {
     // Calculate distance from bullseye
     const dx = x - TARGET_X;
     const dy = y - TARGET_Y;
@@ -414,15 +558,28 @@ export class AxeThrowingStage extends BaseStage {
       scoreLabel = 'Miss!';
     }
 
+    // In practice mode, just show the score popup
+    if (this.gameMode === MODE_PRACTICE) {
+      this.practiceThrows++;
+      this.showScorePopup(x, y, scoreLabel, points, false);
+      this.time.delayedCall(800, () => axe.destroy());
+      this.time.delayedCall(1000, () => {
+        this.isThrowInProgress = false;
+        this.aimCrosshair.setVisible(true);
+        this.drawAimLine();
+      });
+      return;
+    }
+
     // Update scores
-    if (isComputer) {
-      this.computerScore += points;
-      this.computerScoreText.setText(this.computerScore.toString());
+    if (isNick) {
+      this.nickScore += points;
+      this.nickScoreText.setText(this.nickScore.toString());
 
       // Show celebration
       if (points >= 30) {
-        const celebration = COMPUTER_CELEBRATIONS[this.currentRound - 1] ||
-          COMPUTER_CELEBRATIONS[Phaser.Math.Between(0, COMPUTER_CELEBRATIONS.length - 1)];
+        const celebration = NICK_CELEBRATIONS[this.currentRound - 1] ||
+          NICK_CELEBRATIONS[Phaser.Math.Between(0, NICK_CELEBRATIONS.length - 1)];
         this.commentaryText.setText(celebration);
       }
     } else {
@@ -430,8 +587,29 @@ export class AxeThrowingStage extends BaseStage {
       this.playerScoreText.setText(this.playerScore.toString());
     }
 
-    // Score popup
-    const color = isComputer ? '#e94560' : '#4ecca3';
+    this.showScorePopup(x, y, scoreLabel, points, isNick);
+
+    // Keep axe stuck in target briefly then remove
+    this.time.delayedCall(800, () => {
+      axe.destroy();
+    });
+
+    // Next turn
+    this.time.delayedCall(1500, () => {
+      if (this.isPlayerTurn) {
+        // Switch to Nick's turn
+        this.isPlayerTurn = false;
+        this.startNickTurn();
+      } else {
+        // Switch to player turn, advance round
+        this.isPlayerTurn = true;
+        this.startRound();
+      }
+    });
+  }
+
+  showScorePopup(x, y, scoreLabel, points, isNick) {
+    const color = isNick ? '#e94560' : '#4ecca3';
     const popup = this.add.text(x, y - 30, `${scoreLabel}\n+${points}`, {
       fontFamily: 'Georgia, serif',
       fontSize: points >= 30 ? '22px' : '16px',
@@ -447,35 +625,18 @@ export class AxeThrowingStage extends BaseStage {
       duration: 1500,
       onComplete: () => popup.destroy(),
     });
-
-    // Keep axe stuck in target briefly then remove
-    this.time.delayedCall(800, () => {
-      axe.destroy();
-    });
-
-    // Next turn
-    this.time.delayedCall(1500, () => {
-      if (this.isPlayerTurn) {
-        // Switch to computer turn
-        this.isPlayerTurn = false;
-        this.startComputerTurn();
-      } else {
-        // Switch to player turn, advance round
-        this.isPlayerTurn = true;
-        this.startRound();
-      }
-    });
   }
 
   endGame() {
     this.aimCrosshair.setVisible(false);
+    this.aimLine.setVisible(false);
     this.instructionText.setText('');
 
-    // Rig the final result — computer always wins
-    // If player is ahead, give computer bonus points
-    if (this.playerScore >= this.computerScore) {
-      this.computerScore = this.playerScore + Phaser.Math.Between(5, 15);
-      this.computerScoreText.setText(this.computerScore.toString());
+    // Rig the final result — Nick always wins
+    // If player is ahead, give Nick bonus points
+    if (this.playerScore >= this.nickScore) {
+      this.nickScore = this.playerScore + Phaser.Math.Between(5, 15);
+      this.nickScoreText.setText(this.nickScore.toString());
     }
 
     // Dramatic reveal
@@ -492,8 +653,8 @@ export class AxeThrowingStage extends BaseStage {
     this.time.delayedCall(500, () => {
       resultText.setText('FINAL SCORE\n\n' +
         `Mariel: ${this.playerScore}\n` +
-        `Computer: ${this.computerScore}\n\n` +
-        'Computer wins... again! \uD83D\uDE0F');
+        `Nick: ${this.nickScore}\n\n` +
+        'Nick wins... again! \uD83D\uDE0F');
       this.tweens.add({
         targets: resultText,
         alpha: 1,
@@ -508,7 +669,7 @@ export class AxeThrowingStage extends BaseStage {
       this.dialogue = new DialogueSystem(this);
       this.dialogue.createUI();
       this.dialogue.show([
-        { speaker: 'computer', text: 'Was there ever any doubt? \uD83D\uDE0E' },
+        { speaker: 'nick', text: 'Was there ever any doubt? \uD83D\uDE0E' },
         { speaker: 'narrator', text: "Some things never change..." },
         { speaker: 'narrator', text: 'But the real win was the date itself.' },
       ], () => {

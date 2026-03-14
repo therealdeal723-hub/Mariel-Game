@@ -134,7 +134,8 @@ export class DialogueSystem {
       narrator: '',
       you: 'You',
       mariel: 'Mariel',
-      computer: 'Computer',
+      nick: 'Nick',
+      computer: 'Nick',
     };
     return names[speaker] || speaker;
   }
