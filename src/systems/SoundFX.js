@@ -179,22 +179,104 @@ export class SoundFX {
     osc.stop(t + 0.06);
   }
 
-  /** Power charging tick sound */
-  chargeTick() {
-    if (!this.enabled) return;
+  /**
+   * Start a continuous charging tone that tracks the power meter.
+   * The pitch rises/falls with the power level.
+   */
+  startChargeTone() {
+    if (!this.enabled || this._chargeOsc) return;
+    this._ensureContext();
+
+    // Main oscillator — pitch follows power level
+    this._chargeOsc = this.ctx.createOscillator();
+    this._chargeOsc.type = 'sine';
+    this._chargeOsc.frequency.value = 220;
+
+    // Sub oscillator for body
+    this._chargeSubOsc = this.ctx.createOscillator();
+    this._chargeSubOsc.type = 'triangle';
+    this._chargeSubOsc.frequency.value = 110;
+
+    // Gain nodes
+    this._chargeGain = this.ctx.createGain();
+    this._chargeGain.gain.value = 0;
+    this._chargeSubGain = this.ctx.createGain();
+    this._chargeSubGain.gain.value = 0;
+
+    // Low-pass filter to keep it smooth
+    this._chargeFilter = this.ctx.createBiquadFilter();
+    this._chargeFilter.type = 'lowpass';
+    this._chargeFilter.frequency.value = 1200;
+    this._chargeFilter.Q.value = 2;
+
+    this._chargeOsc.connect(this._chargeGain);
+    this._chargeSubOsc.connect(this._chargeSubGain);
+    this._chargeGain.connect(this._chargeFilter);
+    this._chargeSubGain.connect(this._chargeFilter);
+    this._chargeFilter.connect(this.ctx.destination);
+
+    this._chargeOsc.start();
+    this._chargeSubOsc.start();
+
+    // Fade in
+    const t = this.ctx.currentTime;
+    this._chargeGain.gain.setValueAtTime(0, t);
+    this._chargeGain.gain.linearRampToValueAtTime(0.06 * this.volume, t + 0.1);
+    this._chargeSubGain.gain.setValueAtTime(0, t);
+    this._chargeSubGain.gain.linearRampToValueAtTime(0.04 * this.volume, t + 0.1);
+  }
+
+  /**
+   * Update the charging tone to match the current power level (0-100).
+   */
+  updateChargeTone(power) {
+    if (!this._chargeOsc) return;
+    // Map power 0-100 to frequency 220-880 Hz (2 octaves)
+    const freq = 220 + (power / 100) * 660;
+    const subFreq = 110 + (power / 100) * 330;
     const t = this.ctx.currentTime;
 
-    const osc = this.ctx.createOscillator();
-    osc.type = 'square';
-    osc.frequency.value = 440 + this._lastPower * 4;
+    this._chargeOsc.frequency.setTargetAtTime(freq, t, 0.02);
+    this._chargeSubOsc.frequency.setTargetAtTime(subFreq, t, 0.02);
 
-    const gain = this._gain(0.05);
-    gain.gain.setValueAtTime(0.05 * this.volume, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+    // Filter opens up at higher power
+    this._chargeFilter.frequency.setTargetAtTime(800 + power * 12, t, 0.02);
 
-    osc.connect(gain);
-    osc.start(t);
-    osc.stop(t + 0.04);
+    // Volume increases slightly at higher power
+    const vol = (0.04 + (power / 100) * 0.05) * this.volume;
+    this._chargeGain.gain.setTargetAtTime(vol, t, 0.02);
+  }
+
+  /**
+   * Stop the charging tone (fade out quickly).
+   */
+  stopChargeTone() {
+    if (!this._chargeOsc) return;
+    const t = this.ctx.currentTime;
+
+    this._chargeGain.gain.setTargetAtTime(0, t, 0.03);
+    this._chargeSubGain.gain.setTargetAtTime(0, t, 0.03);
+
+    // Clean up after fade
+    const osc = this._chargeOsc;
+    const subOsc = this._chargeSubOsc;
+    const gain = this._chargeGain;
+    const subGain = this._chargeSubGain;
+    const filter = this._chargeFilter;
+
+    this._chargeOsc = null;
+    this._chargeSubOsc = null;
+    this._chargeGain = null;
+    this._chargeSubGain = null;
+    this._chargeFilter = null;
+
+    setTimeout(() => {
+      osc.stop();
+      subOsc.stop();
+      gain.disconnect();
+      subGain.disconnect();
+      filter.disconnect();
+    }, 150);
   }
 
   /** Victory fanfare */
@@ -529,6 +611,7 @@ export class SoundFX {
 
   /** Clean up when scene is destroyed */
   destroy() {
+    this.stopChargeTone();
     this.stopMusic(0);
     this._musicPlaying = false;
   }
