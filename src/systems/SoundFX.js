@@ -112,6 +112,52 @@ export class SoundFX {
     });
   }
 
+  /** Rap air horn — three stacked blasts */
+  airHorn() {
+    if (!this.enabled) return;
+    const t = this.ctx.currentTime;
+
+    // Three horn blasts with slight overlap
+    const blasts = [0, 0.12, 0.28];
+    blasts.forEach((offset) => {
+      const start = t + offset;
+      const dur = 0.18;
+
+      // Main horn tone (sawtooth for that buzzy brass)
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(520, start);
+      osc.frequency.linearRampToValueAtTime(490, start + dur);
+
+      // Second harmonic for thickness
+      const osc2 = this.ctx.createOscillator();
+      osc2.type = 'sawtooth';
+      osc2.frequency.setValueAtTime(523, start);
+      osc2.frequency.linearRampToValueAtTime(495, start + dur);
+      osc2.detune.value = 8;
+
+      // Bandpass to shape it like a horn
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 800;
+      filter.Q.value = 1.5;
+
+      const gain = this._gain(0.35);
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.35 * this.volume, start + 0.01);
+      gain.gain.setValueAtTime(0.35 * this.volume, start + dur * 0.7);
+      gain.gain.exponentialRampToValueAtTime(0.01, start + dur);
+
+      osc.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      osc.start(start);
+      osc.stop(start + dur + 0.05);
+      osc2.start(start);
+      osc2.stop(start + dur + 0.05);
+    });
+  }
+
   /** Short cheer for good throws */
   cheer() {
     if (!this.enabled) return;
