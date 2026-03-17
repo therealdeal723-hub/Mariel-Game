@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config.js';
 import { BaseStage } from './BaseStage.js';
 import { DialogueSystem } from '../systems/DialogueSystem.js';
+import { SoundFX } from '../systems/SoundFX.js';
 
 const TOTAL_ROUNDS = 5;
 const TARGET_X = 800;
@@ -14,6 +15,37 @@ const BULLSEYE_RADIUS = 18;
 const INNER_RADIUS = 45;
 const OUTER_RADIUS = 80;
 const BOARD_RADIUS = 110;
+
+// Difficulty presets for Nick's AI
+const DIFFICULTY = {
+  easy: {
+    label: 'Easy',
+    description: 'Nick had a few drinks',
+    accuracyRange: 60,
+    hitChance: 0.55,
+    powerMin: 50,
+    powerMax: 85,
+    missChance: 0.25,
+  },
+  medium: {
+    label: 'Medium',
+    description: 'Nick is warmed up',
+    accuracyRange: 30,
+    hitChance: 0.75,
+    powerMin: 70,
+    powerMax: 95,
+    missChance: 0.12,
+  },
+  hard: {
+    label: 'Hard',
+    description: 'Nick is locked in',
+    accuracyRange: 12,
+    hitChance: 0.92,
+    powerMin: 90,
+    powerMax: 100,
+    missChance: 0.03,
+  },
+};
 
 // Funny commentary for Nick's ridiculous throws
 const NICK_COMMENTARY = [
@@ -30,6 +62,14 @@ const NICK_CELEBRATIONS = [
   '*air guitar solo*',
   '*blows on fingers like a gun*',
   '*victory dance*',
+];
+
+const NICK_MISS_REACTIONS = [
+  '"That... was a practice throw."',
+  '"The wind got it."',
+  '"My hand slipped!"',
+  '"I meant to do that."',
+  '"The axe is broken."',
 ];
 
 // Game modes
@@ -49,22 +89,37 @@ export class AxeThrowingStage extends BaseStage {
     this.isPlayerTurn = true;
     this.isThrowInProgress = false;
     this.powerLevel = 0;
-    this.powerDirection = 1; // 1 = going up, -1 = going down
+    this.powerDirection = 1;
     this.isPowerCharging = false;
     this.gameMode = MODE_PRACTICE;
     this.practiceThrows = 0;
+    this.difficulty = 'medium';
+
+    // Round-by-round scores
+    this.roundScores = []; // { player: number, nick: number }
 
     // Track where the mouse is aiming
     this.aimX = TARGET_X;
     this.aimY = TARGET_Y;
 
+    // Sound effects & music
+    this.sfx = new SoundFX(this);
+    this.sfx.startMusic();
+
+    // Stop music when scene shuts down (back button, etc.)
+    this.events.on('shutdown', () => this.sfx.destroy());
+
     this.createBackground();
     this.createTarget();
     this.createScoreboard();
+    this.createRoundTracker();
     this.createPlayerUI();
 
     // Back button to return to stage select
     this.createBackButton();
+
+    // Particle emitter for impacts
+    this.createParticleSystem();
 
     // Start in practice mode
     this.startPracticeMode();
@@ -120,6 +175,61 @@ export class AxeThrowingStage extends BaseStage {
     g.lineStyle(1, 0x000000, 0.3);
     g.lineBetween(TARGET_X - BOARD_RADIUS, TARGET_Y, TARGET_X + BOARD_RADIUS, TARGET_Y);
     g.lineBetween(TARGET_X, TARGET_Y - BOARD_RADIUS, TARGET_X, TARGET_Y + BOARD_RADIUS);
+  }
+
+  createParticleSystem() {
+    // Create a small wood chip texture
+    const chipGfx = this.make.graphics({ x: 0, y: 0, add: false });
+    chipGfx.fillStyle(0xc4943a, 1);
+    chipGfx.fillRect(0, 0, 6, 4);
+    chipGfx.generateTexture('woodchip', 6, 4);
+    chipGfx.destroy();
+
+    // Create a spark texture
+    const sparkGfx = this.make.graphics({ x: 0, y: 0, add: false });
+    sparkGfx.fillStyle(0xffd700, 1);
+    sparkGfx.fillCircle(3, 3, 3);
+    sparkGfx.generateTexture('spark', 6, 6);
+    sparkGfx.destroy();
+  }
+
+  emitWoodChips(x, y, count = 8) {
+    for (let i = 0; i < count; i++) {
+      const chip = this.add.rectangle(
+        x, y,
+        Phaser.Math.Between(3, 7), Phaser.Math.Between(2, 4),
+        Phaser.Math.RND.pick([0xc4943a, 0x8b6914, 0x6b4226, 0xdaa520])
+      );
+      this.tweens.add({
+        targets: chip,
+        x: x + Phaser.Math.Between(-40, 40),
+        y: y + Phaser.Math.Between(-40, 20),
+        angle: Phaser.Math.Between(-180, 180),
+        alpha: 0,
+        duration: Phaser.Math.Between(300, 600),
+        ease: 'Power2',
+        onComplete: () => chip.destroy(),
+      });
+    }
+  }
+
+  emitSparks(x, y, count = 12) {
+    for (let i = 0; i < count; i++) {
+      const spark = this.add.circle(x, y, Phaser.Math.Between(1, 3), 0xffd700);
+      const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+      const dist = Phaser.Math.Between(20, 60);
+      this.tweens.add({
+        targets: spark,
+        x: x + Math.cos(angle) * dist,
+        y: y + Math.sin(angle) * dist,
+        alpha: 0,
+        scaleX: 0,
+        scaleY: 0,
+        duration: Phaser.Math.Between(200, 500),
+        ease: 'Power2',
+        onComplete: () => spark.destroy(),
+      });
+    }
   }
 
   createScoreboard() {
@@ -183,6 +293,104 @@ export class AxeThrowingStage extends BaseStage {
     this.setScoreboardVisible(false);
   }
 
+  createRoundTracker() {
+    // Round-by-round score tracker shown below scoreboard
+    this.roundTrackerGroup = this.add.group();
+    this.roundTrackerObjects = [];
+    this.roundTrackerVisible = false;
+  }
+
+  updateRoundTracker() {
+    // Clear previous tracker objects
+    this.roundTrackerObjects.forEach(obj => obj.destroy());
+    this.roundTrackerObjects = [];
+
+    if (!this.roundTrackerVisible) return;
+
+    const startX = GAME_WIDTH / 2 - (TOTAL_ROUNDS * 80) / 2 + 40;
+    const y = 140;
+
+    for (let i = 0; i < TOTAL_ROUNDS; i++) {
+      const x = startX + i * 80;
+      const hasScore = i < this.roundScores.length;
+      const roundData = hasScore ? this.roundScores[i] : null;
+
+      // Round number label
+      const label = this.add.text(x, y - 22, `R${i + 1}`, {
+        fontFamily: 'Arial',
+        fontSize: '10px',
+        color: '#888888',
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.roundTrackerObjects.push(label);
+
+      // Background box
+      const bg = this.add.rectangle(x, y + 8, 70, 36, 0x000000, 0.4)
+        .setStrokeStyle(1, hasScore ? 0x444444 : 0x333333);
+      this.roundTrackerObjects.push(bg);
+
+      if (hasScore) {
+        const pScore = roundData.player;
+        const nScore = roundData.nick;
+        const playerWon = pScore > nScore;
+        const nickWon = nScore > pScore;
+
+        // Player score for this round
+        const pText = this.add.text(x - 18, y + 8, pScore.toString(), {
+          fontFamily: 'Georgia, serif',
+          fontSize: '14px',
+          color: '#4ecca3',
+          fontStyle: 'bold',
+        }).setOrigin(0.5);
+        this.roundTrackerObjects.push(pText);
+
+        // Dash
+        const dash = this.add.text(x, y + 8, '-', {
+          fontFamily: 'Georgia, serif',
+          fontSize: '12px',
+          color: '#666666',
+        }).setOrigin(0.5);
+        this.roundTrackerObjects.push(dash);
+
+        // Nick score for this round
+        const nText = this.add.text(x + 18, y + 8, nScore.toString(), {
+          fontFamily: 'Georgia, serif',
+          fontSize: '14px',
+          color: '#e94560',
+          fontStyle: 'bold',
+        }).setOrigin(0.5);
+        this.roundTrackerObjects.push(nText);
+
+        // Winner circle
+        if (playerWon) {
+          const circle = this.add.graphics();
+          circle.lineStyle(2, 0x4ecca3, 0.9);
+          circle.strokeCircle(x - 18, y + 8, 14);
+          this.roundTrackerObjects.push(circle);
+        } else if (nickWon) {
+          const circle = this.add.graphics();
+          circle.lineStyle(2, 0xe94560, 0.9);
+          circle.strokeCircle(x + 18, y + 8, 14);
+          this.roundTrackerObjects.push(circle);
+        } else {
+          // Tie - circle both
+          const circle = this.add.graphics();
+          circle.lineStyle(2, 0xffd700, 0.6);
+          circle.strokeCircle(x, y + 8, 30);
+          this.roundTrackerObjects.push(circle);
+        }
+      } else {
+        // Pending round
+        const pending = this.add.text(x, y + 8, '--', {
+          fontFamily: 'Georgia, serif',
+          fontSize: '12px',
+          color: '#444444',
+        }).setOrigin(0.5);
+        this.roundTrackerObjects.push(pending);
+      }
+    }
+  }
+
   setScoreboardVisible(visible) {
     this.scoreboardBg.setVisible(visible);
     this.playerLabel.setVisible(visible);
@@ -191,6 +399,51 @@ export class AxeThrowingStage extends BaseStage {
     this.nickLabel.setVisible(visible);
     this.nickScoreText.setVisible(visible);
     this.roundText.setVisible(visible);
+  }
+
+  /** Draw an axe shape using graphics primitives */
+  createAxeSprite(x, y, color) {
+    const container = this.add.container(x, y);
+
+    // Handle (wooden)
+    const handle = this.add.rectangle(0, 8, 6, 24, 0x8b6914)
+      .setStrokeStyle(1, 0x6b4226);
+    container.add(handle);
+
+    // Blade (metal)
+    const blade = this.add.graphics();
+    blade.fillStyle(color, 1);
+    // Left blade curve
+    blade.beginPath();
+    blade.moveTo(-2, -6);
+    blade.lineTo(-14, -14);
+    blade.lineTo(-14, 2);
+    blade.lineTo(-2, 2);
+    blade.closePath();
+    blade.fillPath();
+    // Right blade curve (mirror)
+    blade.beginPath();
+    blade.moveTo(2, -6);
+    blade.lineTo(14, -14);
+    blade.lineTo(14, 2);
+    blade.lineTo(2, 2);
+    blade.closePath();
+    blade.fillPath();
+
+    // Blade outline
+    blade.lineStyle(1, 0xffffff, 0.5);
+    blade.strokePath();
+
+    container.add(blade);
+
+    // Blade edge highlight
+    const edge = this.add.graphics();
+    edge.lineStyle(1, 0xffffff, 0.4);
+    edge.lineBetween(-14, -14, -14, 2);
+    edge.lineBetween(14, -14, 14, 2);
+    container.add(edge);
+
+    return container;
   }
 
   createPlayerUI() {
@@ -232,9 +485,9 @@ export class AxeThrowingStage extends BaseStage {
     this.throwBtn.on('pointerover', () => this.throwBtn.setFillStyle(0x6eeec3));
     this.throwBtn.on('pointerout', () => this.throwBtn.setFillStyle(0x4ecca3));
     this.throwBtn.on('pointerdown', (pointer) => {
-      // Stop event from also triggering aimLine pointermove
       pointer.event.stopPropagation();
       if (!this.canPlayerAct()) return;
+      this.sfx.click();
       if (!this.isPowerCharging) {
         this.isPowerCharging = true;
         this.powerLevel = 0;
@@ -299,9 +552,16 @@ export class AxeThrowingStage extends BaseStage {
     }).setOrigin(0.5);
     this.startGameBtn.on('pointerover', () => this.startGameBtn.setFillStyle(0x6eeec3));
     this.startGameBtn.on('pointerout', () => this.startGameBtn.setFillStyle(0x4ecca3));
-    this.startGameBtn.on('pointerdown', () => this.startActualGame());
+    this.startGameBtn.on('pointerdown', () => {
+      this.sfx.click();
+      this.showDifficultySelect();
+    });
     this.startGameBtn.setVisible(false);
     this.startGameBtnText.setVisible(false);
+
+    // Difficulty selection UI (created hidden)
+    this.difficultyUI = [];
+    this.createDifficultyUI();
 
     // Input handling - mouse moves the crosshair/aim
     this.input.on('pointermove', (pointer) => {
@@ -319,20 +579,80 @@ export class AxeThrowingStage extends BaseStage {
     this.spaceKey.on('down', () => {
       if (!this.canPlayerAct()) return;
       if (!this.isPowerCharging) {
-        // Start charging
         this.isPowerCharging = true;
         this.powerLevel = 0;
         this.powerDirection = 1;
         this.throwBtnText.setText('STOP');
         this.throwBtn.setFillStyle(0xe94560);
       } else {
-        // Stop charging and throw
         this.isPowerCharging = false;
         this.throwBtnText.setText('THROW');
         this.throwBtn.setFillStyle(0x4ecca3);
         this.throwAxe(this.aimX, this.aimY, this.powerLevel);
       }
     });
+  }
+
+  createDifficultyUI() {
+    const centerX = GAME_WIDTH / 2;
+    const startY = 130;
+
+    const title = this.add.text(centerX, startY, 'Choose Difficulty', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '22px',
+      color: '#ffd700',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setVisible(false);
+    this.difficultyUI.push(title);
+
+    const difficulties = ['easy', 'medium', 'hard'];
+    const btnColors = [0x4ecca3, 0xffd700, 0xe94560];
+    const textColors = ['#1a1a2e', '#1a1a2e', '#ffffff'];
+
+    difficulties.forEach((key, i) => {
+      const btnY = startY + 45 + i * 55;
+      const diff = DIFFICULTY[key];
+
+      const btn = this.add.rectangle(centerX, btnY, 240, 42, btnColors[i], 0.9)
+        .setStrokeStyle(2, 0xffffff)
+        .setInteractive({ useHandCursor: true })
+        .setVisible(false);
+
+      const label = this.add.text(centerX, btnY - 3, diff.label, {
+        fontFamily: 'Georgia, serif',
+        fontSize: '16px',
+        color: textColors[i],
+        fontStyle: 'bold',
+      }).setOrigin(0.5).setVisible(false);
+
+      const desc = this.add.text(centerX, btnY + 14, diff.description, {
+        fontFamily: 'Georgia, serif',
+        fontSize: '10px',
+        color: textColors[i],
+        fontStyle: 'italic',
+      }).setOrigin(0.5).setVisible(false);
+
+      btn.on('pointerover', () => btn.setAlpha(0.8));
+      btn.on('pointerout', () => btn.setAlpha(1));
+      btn.on('pointerdown', () => {
+        this.sfx.click();
+        this.difficulty = key;
+        this.hideDifficultySelect();
+        this.startActualGame();
+      });
+
+      this.difficultyUI.push(btn, label, desc);
+    });
+  }
+
+  showDifficultySelect() {
+    this.startGameBtn.setVisible(false);
+    this.startGameBtnText.setVisible(false);
+    this.difficultyUI.forEach(obj => obj.setVisible(true));
+  }
+
+  hideDifficultySelect() {
+    this.difficultyUI.forEach(obj => obj.setVisible(false));
   }
 
   canPlayerAct() {
@@ -348,7 +668,6 @@ export class AxeThrowingStage extends BaseStage {
     const startX = PLAYER_THROW_X + 50;
     const startY = PLAYER_THROW_Y;
 
-    // When charging, show where the axe will actually land at current power
     const powerFraction = this.isPowerCharging
       ? Math.max(this.powerLevel / 100, 0.1)
       : 1.0;
@@ -356,10 +675,8 @@ export class AxeThrowingStage extends BaseStage {
     const endX = startX + (this.aimX - startX) * powerFraction;
     const endY = startY + (this.aimY - startY) * powerFraction;
 
-    // Choose color based on power state
     let dotColor, dotAlpha;
     if (!this.isPowerCharging) {
-      // Not charging yet: show full-power preview in teal
       dotColor = 0x4ecca3;
       dotAlpha = 0.3;
     } else if (this.powerLevel < 40) {
@@ -373,7 +690,6 @@ export class AxeThrowingStage extends BaseStage {
       dotAlpha = 0.7;
     }
 
-    // Draw dots along a parabolic arc to the landing point
     const arcHeight = this.isPowerCharging ? (80 + this.powerLevel * 1.2) : 150;
     const steps = 14;
 
@@ -382,11 +698,10 @@ export class AxeThrowingStage extends BaseStage {
       const t = i / steps;
       const x = startX + (endX - startX) * t;
       const y = startY + (endY - startY) * t - arcHeight * 4 * t * (1 - t);
-      const dotSize = (i === steps) ? 5 : 2; // Bigger dot at landing point
+      const dotSize = (i === steps) ? 5 : 2;
       this.aimLine.fillCircle(x, y, dotSize);
     }
 
-    // Draw a small X at the landing point during charging
     if (this.isPowerCharging) {
       this.aimLine.lineStyle(2, dotColor, 0.9);
       this.aimLine.lineBetween(endX - 6, endY - 6, endX + 6, endY + 6);
@@ -395,7 +710,6 @@ export class AxeThrowingStage extends BaseStage {
   }
 
   update() {
-    // Charge power bar while charging — bounces up and down
     if (this.isPowerCharging) {
       this.powerLevel += 1.5 * this.powerDirection;
       if (this.powerLevel >= 100) {
@@ -409,7 +723,6 @@ export class AxeThrowingStage extends BaseStage {
       this.powerBar.height = barHeight;
       this.powerBar.y = this.powerBarBottom - barHeight;
 
-      // Color changes with power
       if (this.powerLevel < 40) {
         this.powerBar.setFillStyle(0x4ecca3);
       } else if (this.powerLevel < 75) {
@@ -418,7 +731,7 @@ export class AxeThrowingStage extends BaseStage {
         this.powerBar.setFillStyle(0xe94560);
       }
 
-      // Redraw arc to show where axe will land at current power
+      this.sfx.setPowerLevel(this.powerLevel);
       this.drawAimLine();
     }
   }
@@ -440,7 +753,6 @@ export class AxeThrowingStage extends BaseStage {
     this.aimCrosshair.setVisible(true);
     this.commentaryText.setText('');
 
-    // Show start game button after a brief moment
     this.time.delayedCall(500, () => {
       this.startGameBtn.setVisible(true);
       this.startGameBtnText.setVisible(true);
@@ -453,18 +765,24 @@ export class AxeThrowingStage extends BaseStage {
     this.nickScore = 0;
     this.currentRound = 0;
     this.isPlayerTurn = true;
+    this.roundScores = [];
+    this.currentRoundPlayerScore = 0;
+    this.currentRoundNickScore = 0;
 
     // Hide practice UI
     this.startGameBtn.setVisible(false);
     this.startGameBtnText.setVisible(false);
+    this.hideDifficultySelect();
 
-    // Show scoreboard
+    // Show scoreboard and round tracker
     this.setScoreboardVisible(true);
     this.roundText.setY(108);
     this.playerScoreText.setText('0');
     this.nickScoreText.setText('0');
 
-    // Start first round
+    this.roundTrackerVisible = true;
+    this.updateRoundTracker();
+
     this.time.delayedCall(300, () => this.startRound());
   }
 
@@ -478,6 +796,10 @@ export class AxeThrowingStage extends BaseStage {
       this.endGame();
       return;
     }
+
+    // Reset per-round scores
+    this.currentRoundPlayerScore = 0;
+    this.currentRoundNickScore = 0;
 
     if (this.isPlayerTurn) {
       this.startPlayerTurn();
@@ -493,7 +815,6 @@ export class AxeThrowingStage extends BaseStage {
     this.instructionText.setText('Aim \u2022 SPACE or THROW button to charge & release!');
     this.commentaryText.setText('');
 
-    // Show player sprite
     this.playerSprite.setVisible(true);
     this.nickSprite.setVisible(false);
     this.nickSpriteLabel.setVisible(false);
@@ -508,21 +829,65 @@ export class AxeThrowingStage extends BaseStage {
     this.aimLine.setVisible(false);
     this.instructionText.setText("Nick's turn...");
 
-    // Show Nick sprite
     this.playerSprite.setVisible(false);
     this.nickSprite.setVisible(true);
     this.nickSpriteLabel.setVisible(true);
 
-    // Dramatic pause, then ridiculous throw
     const commentary = NICK_COMMENTARY[this.currentRound - 1] ||
       NICK_COMMENTARY[Phaser.Math.Between(0, NICK_COMMENTARY.length - 1)];
     this.commentaryText.setText(commentary);
 
+    // Nick windup animation
+    this.tweens.add({
+      targets: this.nickSprite,
+      scaleX: 1.2,
+      scaleY: 0.9,
+      duration: 300,
+      yoyo: true,
+      ease: 'Sine.easeInOut',
+      onComplete: () => {
+        // Arm swing
+        this.tweens.add({
+          targets: this.nickSprite,
+          angle: -15,
+          duration: 200,
+          yoyo: true,
+          ease: 'Power2',
+          onComplete: () => {
+            this.nickSprite.setAngle(0);
+          },
+        });
+      },
+    });
+
     this.time.delayedCall(1500, () => {
-      // Nick always hits near bullseye (comically precise)
-      const offsetX = Phaser.Math.Between(-10, 10);
-      const offsetY = Phaser.Math.Between(-10, 10);
-      this.throwAxe(TARGET_X + offsetX, TARGET_Y + offsetY, 100, true);
+      const diff = DIFFICULTY[this.difficulty];
+
+      // Check for total whiff
+      if (Math.random() < diff.missChance) {
+        const missX = TARGET_X + Phaser.Math.Between(-200, 200);
+        const missY = TARGET_Y + Phaser.Math.Between(-200, 200);
+        const missTargetX = missX + (Math.abs(missX - TARGET_X) < BOARD_RADIUS ? 150 * Math.sign(missX - TARGET_X || 1) : 0);
+        const missTargetY = missY + (Math.abs(missY - TARGET_Y) < BOARD_RADIUS ? 150 * Math.sign(missY - TARGET_Y || 1) : 0);
+        this.throwAxe(missTargetX, missTargetY, Phaser.Math.Between(40, 70), true);
+        return;
+      }
+
+      // Check if this throw hits the board at all
+      if (Math.random() > diff.hitChance) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = BOARD_RADIUS + Phaser.Math.Between(-20, 30);
+        const offsetX = Math.cos(angle) * dist;
+        const offsetY = Math.sin(angle) * dist;
+        this.throwAxe(TARGET_X + offsetX, TARGET_Y + offsetY, Phaser.Math.Between(diff.powerMin, diff.powerMax), true);
+        return;
+      }
+
+      // Normal throw with accuracy based on difficulty
+      const offsetX = Phaser.Math.Between(-diff.accuracyRange, diff.accuracyRange);
+      const offsetY = Phaser.Math.Between(-diff.accuracyRange, diff.accuracyRange);
+      const power = Phaser.Math.Between(diff.powerMin, diff.powerMax);
+      this.throwAxe(TARGET_X + offsetX, TARGET_Y + offsetY, power, true);
     });
   }
 
@@ -534,73 +899,89 @@ export class AxeThrowingStage extends BaseStage {
     this.powerBar.height = 0;
     this.powerBar.y = this.powerBarBottom;
 
-    // Create axe projectile
     const startX = PLAYER_THROW_X + 50;
     const startY = isNick ? PLAYER_THROW_Y + 100 : PLAYER_THROW_Y;
     const axeColor = isNick ? 0xe94560 : 0x4ecca3;
 
-    const axe = this.add.rectangle(startX, startY, 16, 30, axeColor)
-      .setStrokeStyle(2, 0xffffff);
+    // Create axe sprite instead of plain rectangle
+    const axe = this.createAxeSprite(startX, startY, axeColor);
 
-    // Power determines how far along the trajectory the axe goes.
-    // At 100% power, it lands exactly at the aim point.
-    // Less power = falls short (interpolates between start and aim).
+    // Play whoosh sound
+    this.sfx.whoosh();
+
     const powerFraction = Math.max(power / 100, 0.1);
 
     let landX, landY;
 
     if (isNick) {
-      // Nick: comically accurate
-      landX = targetX;
-      landY = targetY;
-    } else {
-      // Player: power determines how far the axe reaches toward the aim point.
-      // Low power = falls short, 100% power = lands on aim point.
       landX = startX + (targetX - startX) * powerFraction;
       landY = startY + (targetY - startY) * powerFraction;
-
-      // Add slight random spread that increases at extreme power levels
+      const diff = DIFFICULTY[this.difficulty];
+      const spread = Math.floor(diff.accuracyRange * 0.3);
+      landX += Phaser.Math.Between(-spread, spread);
+      landY += Phaser.Math.Between(-spread, spread);
+    } else {
+      landX = startX + (targetX - startX) * powerFraction;
+      landY = startY + (targetY - startY) * powerFraction;
       const spread = power > 90 ? 8 : (power < 20 ? 12 : 4);
       landX += Phaser.Math.Between(-spread, spread);
       landY += Phaser.Math.Between(-spread, spread);
     }
 
-    // Animate the throw as an arc
-    // Arc height scales with power
+    // Arc trajectory for both players
     const arcHeight = 80 + power * 1.2;
     const duration = isNick ? 800 : 350 + (1 - powerFraction) * 200;
 
-    if (isNick) {
-      // Nick gets ridiculous trajectory — curves, loops, etc.
-      this.tweens.add({
-        targets: axe,
-        x: landX,
-        y: landY,
-        angle: 1080, // Triple spin!
-        duration: duration,
-        ease: 'Power2',
-        onComplete: () => this.onAxeLanded(axe, landX, landY, isNick),
-      });
-    } else {
-      // Player: two-part arc using midpoint
-      const midX = (startX + landX) / 2;
-      const midY = Math.min(startY, landY) - arcHeight;
+    const midX = (startX + landX) / 2;
+    const midY = Math.min(startY, landY) - arcHeight;
 
+    if (isNick) {
+      // Nick: arc with triple spin
       this.tweens.add({
         targets: axe,
         x: midX,
         y: midY,
-        angle: 180,
         duration: duration * 0.5,
         ease: 'Sine.easeOut',
+        onUpdate: () => {
+          // Continuous rotation on the container
+          axe.angle += 15;
+        },
         onComplete: () => {
           this.tweens.add({
             targets: axe,
             x: landX,
             y: landY,
-            angle: 360,
             duration: duration * 0.5,
             ease: 'Sine.easeIn',
+            onUpdate: () => {
+              axe.angle += 15;
+            },
+            onComplete: () => this.onAxeLanded(axe, landX, landY, isNick),
+          });
+        },
+      });
+    } else {
+      // Player: two-part arc
+      this.tweens.add({
+        targets: axe,
+        x: midX,
+        y: midY,
+        duration: duration * 0.5,
+        ease: 'Sine.easeOut',
+        onUpdate: () => {
+          axe.angle += 10;
+        },
+        onComplete: () => {
+          this.tweens.add({
+            targets: axe,
+            x: landX,
+            y: landY,
+            duration: duration * 0.5,
+            ease: 'Sine.easeIn',
+            onUpdate: () => {
+              axe.angle += 10;
+            },
             onComplete: () => this.onAxeLanded(axe, landX, landY, isNick),
           });
         },
@@ -609,12 +990,10 @@ export class AxeThrowingStage extends BaseStage {
   }
 
   onAxeLanded(axe, x, y, isNick) {
-    // Calculate distance from bullseye
     const dx = x - TARGET_X;
     const dy = y - TARGET_Y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Determine score
     let points = 0;
     let scoreLabel = '';
 
@@ -635,6 +1014,37 @@ export class AxeThrowingStage extends BaseStage {
       scoreLabel = 'Miss!';
     }
 
+    // Sound effects based on result
+    if (distance <= BOARD_RADIUS) {
+      this.sfx.thud();
+      this.emitWoodChips(x, y, points >= 30 ? 12 : 6);
+
+      if (points === 50) {
+        // Bullseye gets sparks and fanfare
+        this.time.delayedCall(100, () => {
+          this.sfx.bullseye();
+          this.emitSparks(x, y, 16);
+        });
+      } else if (points >= 30) {
+        this.time.delayedCall(100, () => this.sfx.cheer());
+      }
+    } else {
+      // Miss
+      this.sfx.sadTrombone();
+    }
+
+    // Wobble animation on impact (axe vibrates when it sticks)
+    if (distance <= BOARD_RADIUS) {
+      this.tweens.add({
+        targets: axe,
+        angle: axe.angle + Phaser.Math.Between(-8, 8),
+        duration: 50,
+        yoyo: true,
+        repeat: 3,
+        ease: 'Sine.easeInOut',
+      });
+    }
+
     // In practice mode, just show the score popup
     if (this.gameMode === MODE_PRACTICE) {
       this.practiceThrows++;
@@ -652,21 +1062,24 @@ export class AxeThrowingStage extends BaseStage {
     if (isNick) {
       this.nickScore += points;
       this.nickScoreText.setText(this.nickScore.toString());
+      this.currentRoundNickScore = points;
 
-      // Show celebration
       if (points >= 30) {
         const celebration = NICK_CELEBRATIONS[this.currentRound - 1] ||
           NICK_CELEBRATIONS[Phaser.Math.Between(0, NICK_CELEBRATIONS.length - 1)];
         this.commentaryText.setText(celebration);
+      } else if (points === 0) {
+        const reaction = NICK_MISS_REACTIONS[Phaser.Math.Between(0, NICK_MISS_REACTIONS.length - 1)];
+        this.commentaryText.setText(reaction);
       }
     } else {
       this.playerScore += points;
       this.playerScoreText.setText(this.playerScore.toString());
+      this.currentRoundPlayerScore = points;
     }
 
     this.showScorePopup(x, y, scoreLabel, points, isNick);
 
-    // Keep axe stuck in target briefly then remove
     this.time.delayedCall(800, () => {
       axe.destroy();
     });
@@ -678,6 +1091,13 @@ export class AxeThrowingStage extends BaseStage {
         this.isPlayerTurn = false;
         this.startNickTurn();
       } else {
+        // Round complete — record scores and update tracker
+        this.roundScores.push({
+          player: this.currentRoundPlayerScore,
+          nick: this.currentRoundNickScore,
+        });
+        this.updateRoundTracker();
+
         // Switch to player turn, advance round
         this.isPlayerTurn = true;
         this.startRound();
@@ -708,50 +1128,140 @@ export class AxeThrowingStage extends BaseStage {
     this.aimCrosshair.setVisible(false);
     this.aimLine.setVisible(false);
     this.instructionText.setText('');
-
-    // Rig the final result — Nick always wins
-    // If player is ahead, give Nick bonus points
-    if (this.playerScore >= this.nickScore) {
-      this.nickScore = this.playerScore + Phaser.Math.Between(5, 15);
-      this.nickScoreText.setText(this.nickScore.toString());
-    }
-
-    // Dramatic reveal
     this.commentaryText.setText('');
 
-    const resultText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '', {
+    const nickWins = this.nickScore > this.playerScore;
+    const isTie = this.nickScore === this.playerScore;
+
+    // Play victory or sad sound
+    this.time.delayedCall(300, () => {
+      if (!nickWins && !isTie) {
+        this.sfx.victory();
+      } else if (nickWins) {
+        this.sfx.sadTrombone();
+      }
+    });
+
+    const resultText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, '', {
       fontFamily: 'Georgia, serif',
-      fontSize: '36px',
+      fontSize: '32px',
       color: '#ffd700',
       fontStyle: 'bold',
       align: 'center',
     }).setOrigin(0.5).setAlpha(0);
 
     this.time.delayedCall(500, () => {
-      resultText.setText('FINAL SCORE\n\n' +
-        `Mariel: ${this.playerScore}\n` +
-        `Nick: ${this.nickScore}\n\n` +
-        'Nick wins... again! \uD83D\uDE0F');
+      let resultMessage;
+      if (isTie) {
+        resultMessage = 'FINAL SCORE\n\n' +
+          `Mariel: ${this.playerScore}\n` +
+          `Nick: ${this.nickScore}\n\n` +
+          "It's a tie! A rift in the timeline!";
+      } else if (nickWins) {
+        resultMessage = 'FINAL SCORE\n\n' +
+          `Mariel: ${this.playerScore}\n` +
+          `Nick: ${this.nickScore}\n\n` +
+          'Nick wins, just like how\nit actually happened!';
+      } else {
+        resultMessage = 'FINAL SCORE\n\n' +
+          `Mariel: ${this.playerScore}\n` +
+          `Nick: ${this.nickScore}\n\n` +
+          'Mariel wins!\nA break in the timeline...';
+      }
+
+      resultText.setText(resultMessage);
       this.tweens.add({
         targets: resultText,
         alpha: 1,
         duration: 800,
       });
+
+      // Show replay button
+      this.showReplayButton();
     });
 
-    // Show funny post-game dialogue then complete stage
+    // Show post-game dialogue after delay
     this.time.delayedCall(4000, () => {
       resultText.destroy();
+      this.hideReplayButton();
+
+      let dialogueLines;
+      if (isTie) {
+        dialogueLines = [
+          { speaker: 'nick', text: "A tie?! That's not how I remember it..." },
+          { speaker: 'narrator', text: 'The timeline holds... for now.' },
+          { speaker: 'narrator', text: 'But the real win was the date itself.' },
+        ];
+      } else if (nickWins) {
+        dialogueLines = [
+          { speaker: 'nick', text: 'Was there ever any doubt? \uD83D\uDE0E' },
+          { speaker: 'narrator', text: "Some things never change..." },
+          { speaker: 'narrator', text: 'But the real win was the date itself.' },
+        ];
+      } else {
+        dialogueLines = [
+          { speaker: 'nick', text: 'Wait... that\'s not how this goes!' },
+          { speaker: 'narrator', text: 'The timeline fractures. Mariel has rewritten history.' },
+          { speaker: 'narrator', text: 'But some things remain the same... like the date itself.' },
+        ];
+      }
 
       this.dialogue = new DialogueSystem(this);
       this.dialogue.createUI();
-      this.dialogue.show([
-        { speaker: 'nick', text: 'Was there ever any doubt? \uD83D\uDE0E' },
-        { speaker: 'narrator', text: "Some things never change..." },
-        { speaker: 'narrator', text: 'But the real win was the date itself.' },
-      ], () => {
+      this.dialogue.show(dialogueLines, () => {
+        this.sfx.stopMusic();
         this.completeStage();
       });
     });
+  }
+
+  showReplayButton() {
+    this.replayBtn = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 160, 180, 44, 0x4ecca3, 0.9)
+      .setStrokeStyle(2, 0xffffff)
+      .setInteractive({ useHandCursor: true })
+      .setAlpha(0);
+
+    this.replayBtnText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 160, 'Play Again', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '18px',
+      color: '#1a1a2e',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setAlpha(0);
+
+    this.replayBtn.on('pointerover', () => this.replayBtn.setFillStyle(0x6eeec3));
+    this.replayBtn.on('pointerout', () => this.replayBtn.setFillStyle(0x4ecca3));
+    this.replayBtn.on('pointerdown', () => {
+      this.sfx.click();
+      this.restartGame();
+    });
+
+    // Fade in
+    this.tweens.add({
+      targets: [this.replayBtn, this.replayBtnText],
+      alpha: 1,
+      duration: 500,
+      delay: 300,
+    });
+  }
+
+  hideReplayButton() {
+    if (this.replayBtn) {
+      this.replayBtn.destroy();
+      this.replayBtn = null;
+    }
+    if (this.replayBtnText) {
+      this.replayBtnText.destroy();
+      this.replayBtnText = null;
+    }
+  }
+
+  restartGame() {
+    // Clean up and restart the entire scene
+    this.sfx.stopMusic(0);
+    this.hideReplayButton();
+    this.roundTrackerVisible = false;
+    this.roundTrackerObjects.forEach(obj => obj.destroy());
+    this.roundTrackerObjects = [];
+    this.scene.restart();
   }
 }
