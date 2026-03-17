@@ -4,44 +4,50 @@ import { BaseStage } from './BaseStage.js';
 import { DialogueSystem } from '../systems/DialogueSystem.js';
 import { SoundFX } from '../systems/SoundFX.js';
 
-// Grid dimensions for the room
-const GRID_COLS = 10;
-const GRID_ROWS = 8;
-const CELL_SIZE = 56;
-const GRID_X = 320; // left edge of grid
-const GRID_Y = 140; // top edge of grid
+// Room grid
+const GRID_COLS = 8;
+const GRID_ROWS = 6;
+const CELL_SIZE = 64;
+const GRID_X = 340;
+const GRID_Y = 130;
 
-// Items to unpack — each has a shape (array of [col, row] offsets), color, and label
+// Open box area (left side)
+const BOX_X = 40;
+const BOX_Y = 160;
+const BOX_W = 240;
+const BOX_H = 400;
+
+// Items — each has a multi-cell shape, color, label, and emoji icon
 const ITEMS = [
-  { id: 'couch', label: 'Couch', shape: [[0,0],[1,0],[2,0]], color: 0x8b6914, icon: '🛋️' },
-  { id: 'bed', label: 'Bed', shape: [[0,0],[1,0],[0,1],[1,1]], color: 0x4a6fa5, icon: '🛏️' },
-  { id: 'table', label: 'Table', shape: [[0,0],[1,0]], color: 0x6b4226, icon: '🪑' },
-  { id: 'bookshelf', label: 'Bookshelf', shape: [[0,0],[0,1],[0,2]], color: 0x8b4513, icon: '📚' },
-  { id: 'tv', label: 'TV', shape: [[0,0],[1,0]], color: 0x333333, icon: '📺' },
-  { id: 'plant', label: 'Plant', shape: [[0,0]], color: 0x2d8b46, icon: '🪴' },
-  { id: 'lamp', label: 'Lamp', shape: [[0,0]], color: 0xffd700, icon: '💡' },
-  { id: 'rug', label: 'Rug', shape: [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]], color: 0xcc5533, icon: '🟫' },
-  { id: 'boxes', label: "Nick's Boxes", shape: [[0,0],[1,0],[0,1]], color: 0xe94560, icon: '📦' },
-  { id: 'guitar', label: "Nick's Guitar", shape: [[0,0],[0,1]], color: 0xd4a017, icon: '🎸' },
-  { id: 'photos', label: 'Photo Frame', shape: [[0,0]], color: 0xeecbad, icon: '🖼️' },
-  { id: 'kitchenbox', label: 'Kitchen Box', shape: [[0,0],[1,0]], color: 0x4ecca3, icon: '🍳' },
+  { id: 'couch', label: 'Couch', shape: [[0,0],[1,0],[2,0]], color: 0x8b6914, icon: '\uD83D\uDECB\uFE0F' },
+  { id: 'bed', label: 'Bed', shape: [[0,0],[1,0],[0,1],[1,1]], color: 0x4a6fa5, icon: '\uD83D\uDECF\uFE0F' },
+  { id: 'table', label: 'Table', shape: [[0,0],[1,0]], color: 0x6b4226, icon: '\uD83E\uDE91' },
+  { id: 'bookshelf', label: 'Bookshelf', shape: [[0,0],[0,1],[0,2]], color: 0x8b4513, icon: '\uD83D\uDCDA' },
+  { id: 'tv', label: 'TV', shape: [[0,0],[1,0]], color: 0x333333, icon: '\uD83D\uDCFA' },
+  { id: 'plant', label: 'Plant', shape: [[0,0]], color: 0x2d8b46, icon: '\uD83E\uDEB4' },
+  { id: 'lamp', label: 'Lamp', shape: [[0,0]], color: 0xffd700, icon: '\uD83D\uDCA1' },
+  { id: 'rug', label: 'Rug', shape: [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]], color: 0xcc5533, icon: '\uD83D\uDFEB' },
+  { id: 'boxes', label: "Nick's Boxes", shape: [[0,0],[1,0],[0,1]], color: 0xe94560, icon: '\uD83D\uDCE6' },
+  { id: 'guitar', label: "Nick's Guitar", shape: [[0,0],[0,1]], color: 0xd4a017, icon: '\uD83C\uDFB8' },
+  { id: 'photos', label: 'Photo Frame', shape: [[0,0]], color: 0xeecbad, icon: '\uD83D\uDDBC\uFE0F' },
+  { id: 'kitchenbox', label: 'Kitchen Box', shape: [[0,0],[1,0]], color: 0x4ecca3, icon: '\uD83C\uDF73' },
 ];
 
-// Nick's commentary as items are placed
-const NICK_COMMENTS = [
-  { speaker: 'nick', text: '"The couch goes RIGHT there. Trust me."' },
-  { speaker: 'nick', text: '"I measured the bedroom... mostly."' },
-  { speaker: 'nick', text: '"That table is load-bearing, I think."' },
-  { speaker: 'nick', text: '"My bookshelf stays. Non-negotiable."' },
-  { speaker: 'nick', text: '"Big TV energy."' },
-  { speaker: 'nick', text: '"Every home needs a plant to... not water."' },
-  { speaker: 'nick', text: '"Mood lighting is ESSENTIAL."' },
-  { speaker: 'nick', text: '"The rug really ties the room together."' },
-  { speaker: 'nick', text: '"These boxes? Mostly sentimental stuff. And snacks."' },
-  { speaker: 'nick', text: '"The guitar stays out. What if I get inspired?"' },
-  { speaker: 'nick', text: '"Our first photo together! ...okay YOUR photo, for now."' },
-  { speaker: 'nick', text: '"Kitchen stuff! I cook sometimes. Cereal counts."' },
-];
+// Nick's commentary keyed to item id
+const NICK_COMMENTS = {
+  couch: '"The couch goes RIGHT there. Trust me."',
+  bed: '"I measured the bedroom... mostly."',
+  table: '"That table is load-bearing, I think."',
+  bookshelf: '"My bookshelf stays. Non-negotiable."',
+  tv: '"Big TV energy."',
+  plant: '"Every home needs a plant to... not water."',
+  lamp: '"Mood lighting is ESSENTIAL."',
+  rug: '"The rug really ties the room together."',
+  boxes: '"These boxes? Mostly sentimental stuff. And snacks."',
+  guitar: '"The guitar stays out. What if I get inspired?"',
+  photos: '"Our first photo together! ...okay YOUR photo, for now."',
+  kitchenbox: '"Kitchen stuff! I cook sometimes. Cereal counts."',
+};
 
 export class UnpackingStage extends BaseStage {
   constructor() {
@@ -53,289 +59,464 @@ export class UnpackingStage extends BaseStage {
     this.sfx.startMusic();
     this.events.on('shutdown', () => this.sfx.destroy());
 
-    // Game state
+    // State
     this.grid = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
-    this.placedItems = [];
-    this.itemQueue = Phaser.Utils.Array.Shuffle([...ITEMS]);
-    this.currentItemIndex = 0;
-    this.currentItem = null;
-    this.currentItemCells = []; // graphics objects for current dragging item
-    this.ghostCells = []; // preview on grid
-    this.gridCol = 0;
-    this.gridRow = 0;
-    this.rotation = 0; // 0, 1, 2, 3 (90° increments)
+    this.placedCount = 0;
+    this.totalItems = ITEMS.length;
     this.isComplete = false;
-    this.score = 0;
+    this.isDragging = false;
+    this.dragItem = null;
+    this.dragSprite = null;
+    this.dragRotation = 0;
+    this.placedItemSprites = []; // track placed sprites for icon rendering
 
     this.createBackground();
-    this.createGrid();
-    this.createSidebar();
+    this.createRoom();
+    this.createBox();
     this.createBackButton();
-    this.createControls();
 
-    // Intro commentary
-    this.commentaryText = this.add.text(GAME_WIDTH / 2, GRID_Y + GRID_ROWS * CELL_SIZE + 40, '', {
+    // Commentary
+    this.commentaryText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 35, '', {
       fontFamily: 'Georgia, serif',
       fontSize: '16px',
       color: '#ffd700',
       fontStyle: 'italic',
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setDepth(10);
 
-    this.instructionText = this.add.text(GAME_WIDTH / 2, 30, 'Arrange furniture in your new home!', {
+    // Header
+    this.add.text(GAME_WIDTH / 2, 25, 'Unpack your new home together!', {
       fontFamily: 'Georgia, serif',
       fontSize: '20px',
       color: '#ffffff',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    this.progressText = this.add.text(GAME_WIDTH / 2, 58, '', {
+    this.progressText = this.add.text(GAME_WIDTH / 2, 55, `0 / ${this.totalItems} items placed`, {
       fontFamily: 'Georgia, serif',
       fontSize: '14px',
       color: '#aaaaaa',
     }).setOrigin(0.5);
 
-    this.spawnNextItem();
+    // Hint text
+    this.hintText = this.add.text(GAME_WIDTH / 2, 80, 'Drag items from the box into the room \u2022 R to rotate while dragging', {
+      fontFamily: 'Arial',
+      fontSize: '12px',
+      color: '#666666',
+    }).setOrigin(0.5);
+
+    // Fill the box with items
+    this.boxItems = [];
+    this.populateBox();
+
+    // Rotate key
+    this.rKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+    this.rKey.on('down', () => {
+      if (this.isDragging && this.dragItem) {
+        this.dragRotation = (this.dragRotation + 1) % 4;
+        this.sfx.click();
+        this.rebuildDragSprite();
+        this.updateDropPreview(this.input.activePointer);
+      }
+    });
   }
 
   createBackground() {
-    // Room background
+    // Warm apartment background
     this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x2a1f3d);
 
-    // Floor area under grid
-    const floorX = GRID_X + (GRID_COLS * CELL_SIZE) / 2;
-    const floorY = GRID_Y + (GRID_ROWS * CELL_SIZE) / 2;
-    this.add.rectangle(floorX, floorY, GRID_COLS * CELL_SIZE + 20, GRID_ROWS * CELL_SIZE + 20, 0x5c4033, 0.3);
+    // Wall behind room
+    const roomCenterX = GRID_X + (GRID_COLS * CELL_SIZE) / 2;
+    const roomCenterY = GRID_Y + (GRID_ROWS * CELL_SIZE) / 2;
+    this.add.rectangle(roomCenterX, roomCenterY, GRID_COLS * CELL_SIZE + 30, GRID_ROWS * CELL_SIZE + 30, 0x3d2b1f, 0.5);
+  }
 
+  createRoom() {
     // Room label
-    this.add.text(GRID_X + (GRID_COLS * CELL_SIZE) / 2, GRID_Y - 20, '🏠 Your New Home', {
+    this.add.text(GRID_X + (GRID_COLS * CELL_SIZE) / 2, GRID_Y - 18, '\uD83C\uDFE0 Your New Home', {
       fontFamily: 'Georgia, serif',
       fontSize: '16px',
       color: '#ffd700',
     }).setOrigin(0.5);
-  }
 
-  createGrid() {
+    // Draw grid
     this.gridGraphics = this.add.graphics();
+    this.dropPreviewGraphics = this.add.graphics().setDepth(5);
     this.drawGrid();
   }
 
   drawGrid() {
     this.gridGraphics.clear();
 
-    // Grid cells
     for (let r = 0; r < GRID_ROWS; r++) {
       for (let c = 0; c < GRID_COLS; c++) {
         const x = GRID_X + c * CELL_SIZE;
         const y = GRID_Y + r * CELL_SIZE;
 
         if (this.grid[r][c]) {
-          // Occupied cell
           const item = this.grid[r][c];
-          this.gridGraphics.fillStyle(item.color, 0.8);
+          this.gridGraphics.fillStyle(item.color, 0.7);
           this.gridGraphics.fillRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
-          this.gridGraphics.lineStyle(1, 0xffffff, 0.2);
+          this.gridGraphics.lineStyle(1, 0xffffff, 0.15);
           this.gridGraphics.strokeRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
         } else {
-          // Empty cell
-          this.gridGraphics.fillStyle(0x3d2b1f, 0.4);
+          // Empty floor tile
+          this.gridGraphics.fillStyle(0x5c4033, 0.25);
           this.gridGraphics.fillRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
-          this.gridGraphics.lineStyle(1, 0x665544, 0.3);
+          this.gridGraphics.lineStyle(1, 0x665544, 0.2);
           this.gridGraphics.strokeRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
         }
       }
     }
   }
 
-  createSidebar() {
-    // Sidebar for current item preview
-    const sideX = 160;
-    const sideY = 200;
+  createBox() {
+    // Draw open moving box
+    const boxGraphics = this.add.graphics();
 
-    this.add.rectangle(sideX, sideY + 100, 240, 350, 0x000000, 0.5)
-      .setStrokeStyle(2, 0x666666);
+    // Box body (brown cardboard)
+    boxGraphics.fillStyle(0x8B6914, 1);
+    boxGraphics.fillRoundedRect(BOX_X, BOX_Y, BOX_W, BOX_H, 8);
+    boxGraphics.lineStyle(2, 0x6b4226, 1);
+    boxGraphics.strokeRoundedRect(BOX_X, BOX_Y, BOX_W, BOX_H, 8);
 
-    this.add.text(sideX, sideY - 50, 'NEXT ITEM', {
+    // Tape stripe
+    boxGraphics.fillStyle(0xdaa520, 0.5);
+    boxGraphics.fillRect(BOX_X + BOX_W / 2 - 15, BOX_Y, 30, BOX_H);
+
+    // Box flaps (open) - left flap
+    boxGraphics.fillStyle(0x9B7924, 1);
+    boxGraphics.beginPath();
+    boxGraphics.moveTo(BOX_X, BOX_Y);
+    boxGraphics.lineTo(BOX_X - 20, BOX_Y - 30);
+    boxGraphics.lineTo(BOX_X + BOX_W * 0.4, BOX_Y - 25);
+    boxGraphics.lineTo(BOX_X + BOX_W * 0.4, BOX_Y);
+    boxGraphics.closePath();
+    boxGraphics.fillPath();
+    boxGraphics.lineStyle(2, 0x6b4226, 1);
+    boxGraphics.strokePath();
+
+    // Right flap
+    boxGraphics.fillStyle(0x9B7924, 1);
+    boxGraphics.beginPath();
+    boxGraphics.moveTo(BOX_X + BOX_W, BOX_Y);
+    boxGraphics.lineTo(BOX_X + BOX_W + 20, BOX_Y - 30);
+    boxGraphics.lineTo(BOX_X + BOX_W * 0.6, BOX_Y - 25);
+    boxGraphics.lineTo(BOX_X + BOX_W * 0.6, BOX_Y);
+    boxGraphics.closePath();
+    boxGraphics.fillPath();
+    boxGraphics.lineStyle(2, 0x6b4226, 1);
+    boxGraphics.strokePath();
+
+    // Box label
+    this.add.text(BOX_X + BOX_W / 2, BOX_Y + 20, '\uD83D\uDCE6 STUFF', {
       fontFamily: 'Arial',
       fontSize: '12px',
-      color: '#aaaaaa',
+      color: '#5c3a1e',
       fontStyle: 'bold',
     }).setOrigin(0.5);
-
-    this.itemNameText = this.add.text(sideX, sideY - 25, '', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '18px',
-      color: '#ffffff',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
-
-    this.itemIconText = this.add.text(sideX, sideY + 30, '', {
-      fontSize: '48px',
-    }).setOrigin(0.5);
-
-    // Item shape preview
-    this.previewGraphics = this.add.graphics();
-    this.previewX = sideX;
-    this.previewY = sideY + 110;
-
-    // Controls hint
-    this.add.text(sideX, sideY + 180, 'Arrow keys: Move\nR: Rotate\nSPACE: Place', {
-      fontFamily: 'Arial',
-      fontSize: '12px',
-      color: '#888888',
-      align: 'center',
-      lineSpacing: 4,
-    }).setOrigin(0.5);
-
-    // Place button (mobile-friendly)
-    this.placeBtn = this.add.rectangle(sideX, sideY + 240, 120, 40, 0x4ecca3, 0.9)
-      .setStrokeStyle(2, 0xffffff)
-      .setInteractive({ useHandCursor: true });
-    this.placeBtnText = this.add.text(sideX, sideY + 240, 'PLACE', {
-      fontFamily: 'Arial',
-      fontSize: '14px',
-      color: '#1a1a2e',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
-
-    this.placeBtn.on('pointerover', () => this.placeBtn.setFillStyle(0x6eeec3));
-    this.placeBtn.on('pointerout', () => this.placeBtn.setFillStyle(0x4ecca3));
-    this.placeBtn.on('pointerdown', () => this.placeCurrentItem());
-
-    // Rotate button
-    this.rotateBtn = this.add.rectangle(sideX, sideY + 290, 120, 40, 0xffd700, 0.9)
-      .setStrokeStyle(2, 0xffffff)
-      .setInteractive({ useHandCursor: true });
-    this.add.text(sideX, sideY + 290, 'ROTATE', {
-      fontFamily: 'Arial',
-      fontSize: '14px',
-      color: '#1a1a2e',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
-
-    this.rotateBtn.on('pointerover', () => this.rotateBtn.setFillStyle(0xffe44d));
-    this.rotateBtn.on('pointerout', () => this.rotateBtn.setFillStyle(0xffd700));
-    this.rotateBtn.on('pointerdown', () => this.rotateItem());
   }
 
-  createControls() {
-    // Keyboard controls
-    this.cursors = this.input.keyboard.createCursorKeys();
-    this.rKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
-    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+  populateBox() {
+    // Arrange items inside the box as draggable icons
+    const shuffled = Phaser.Utils.Array.Shuffle([...ITEMS]);
+    const cols = 3;
+    const spacingX = 70;
+    const spacingY = 80;
+    const startX = BOX_X + 45;
+    const startY = BOX_Y + 55;
 
-    // Debounce movement
-    this._moveDelay = 0;
+    shuffled.forEach((item, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = startX + col * spacingX;
+      const y = startY + row * spacingY;
 
-    this.cursors.left.on('down', () => this.moveItem(-1, 0));
-    this.cursors.right.on('down', () => this.moveItem(1, 0));
-    this.cursors.up.on('down', () => this.moveItem(0, -1));
-    this.cursors.down.on('down', () => this.moveItem(0, 1));
-    this.rKey.on('down', () => this.rotateItem());
-    this.spaceKey.on('down', () => this.placeCurrentItem());
+      // Item icon (emoji)
+      const icon = this.add.text(x, y, item.icon, {
+        fontSize: '32px',
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true, draggable: true }).setDepth(6);
 
-    // Click on grid to position item
-    this.input.on('pointerdown', (pointer) => {
-      if (this.isComplete || !this.currentItem) return;
-      const col = Math.floor((pointer.x - GRID_X) / CELL_SIZE);
-      const row = Math.floor((pointer.y - GRID_Y) / CELL_SIZE);
-      if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
-        this.gridCol = col;
-        this.gridRow = row;
-        this.sfx.click();
-        this.updateGhost();
-      }
+      // Item label below icon
+      const label = this.add.text(x, y + 22, item.label, {
+        fontFamily: 'Arial',
+        fontSize: '9px',
+        color: '#ddd',
+        align: 'center',
+      }).setOrigin(0.5);
+
+      // Hover effect
+      icon.on('pointerover', () => {
+        icon.setScale(1.2);
+      });
+      icon.on('pointerout', () => {
+        if (!this.isDragging || this.dragItem !== item) {
+          icon.setScale(1.0);
+        }
+      });
+
+      // Drag start
+      icon.on('dragstart', () => {
+        this.startDrag(item, icon, label);
+      });
+
+      // During drag
+      icon.on('drag', (_pointer, dragX, dragY) => {
+        icon.setPosition(dragX, dragY);
+        this.updateDropPreview(this.input.activePointer);
+      });
+
+      // Drag end
+      icon.on('dragend', () => {
+        this.endDrag(icon, label);
+      });
+
+      this.boxItems.push({ item, icon, label });
     });
   }
 
+  startDrag(item, icon, label) {
+    this.isDragging = true;
+    this.dragItem = item;
+    this.dragIcon = icon;
+    this.dragLabel = label;
+    this.dragRotation = 0;
+
+    icon.setDepth(20);
+    icon.setScale(1.3);
+    icon.setAlpha(0.9);
+    label.setVisible(false);
+
+    // Build ghost shape sprites that follow cursor
+    this.rebuildDragSprite();
+  }
+
+  rebuildDragSprite() {
+    // Clear old drag shape visuals
+    if (this.dragShapeCells) {
+      this.dragShapeCells.forEach(c => c.destroy());
+    }
+    this.dragShapeCells = [];
+
+    if (!this.dragItem) return;
+
+    const shape = this.getRotatedShape(this.dragItem.shape, this.dragRotation);
+
+    shape.forEach(([c, r]) => {
+      const cell = this.add.rectangle(0, 0, CELL_SIZE - 4, CELL_SIZE - 4, this.dragItem.color, 0.5)
+        .setStrokeStyle(2, 0xffffff, 0.5)
+        .setDepth(19);
+      this.dragShapeCells.push(cell);
+    });
+  }
+
+  updateDropPreview(pointer) {
+    this.dropPreviewGraphics.clear();
+
+    if (!this.isDragging || !this.dragItem) {
+      if (this.dragShapeCells) {
+        this.dragShapeCells.forEach(c => c.setVisible(false));
+      }
+      return;
+    }
+
+    const shape = this.getRotatedShape(this.dragItem.shape, this.dragRotation);
+
+    // Position shape cells relative to cursor
+    shape.forEach(([c, r], i) => {
+      if (i < this.dragShapeCells.length) {
+        this.dragShapeCells[i].setPosition(
+          pointer.x + c * CELL_SIZE,
+          pointer.y + r * CELL_SIZE
+        );
+        this.dragShapeCells[i].setVisible(true);
+      }
+    });
+
+    // Check if hovering over grid
+    const col = Math.floor((pointer.x - GRID_X) / CELL_SIZE);
+    const row = Math.floor((pointer.y - GRID_Y) / CELL_SIZE);
+
+    if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
+      const canPlace = this.canPlaceAt(col, row, shape);
+
+      shape.forEach(([c, r]) => {
+        const gc = col + c;
+        const gr = row + r;
+        if (gc < 0 || gc >= GRID_COLS || gr < 0 || gr >= GRID_ROWS) return;
+
+        const x = GRID_X + gc * CELL_SIZE;
+        const y = GRID_Y + gr * CELL_SIZE;
+
+        if (canPlace) {
+          this.dropPreviewGraphics.fillStyle(this.dragItem.color, 0.35);
+          this.dropPreviewGraphics.fillRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+          this.dropPreviewGraphics.lineStyle(2, 0x4ecca3, 0.9);
+          this.dropPreviewGraphics.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+        } else {
+          this.dropPreviewGraphics.fillStyle(0xe94560, 0.25);
+          this.dropPreviewGraphics.fillRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+          this.dropPreviewGraphics.lineStyle(2, 0xe94560, 0.8);
+          this.dropPreviewGraphics.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+        }
+      });
+    }
+  }
+
+  endDrag(icon, label) {
+    this.dropPreviewGraphics.clear();
+
+    // Clean up drag shape cells
+    if (this.dragShapeCells) {
+      this.dragShapeCells.forEach(c => c.destroy());
+      this.dragShapeCells = [];
+    }
+
+    if (!this.dragItem) {
+      this.isDragging = false;
+      return;
+    }
+
+    const pointer = this.input.activePointer;
+    const shape = this.getRotatedShape(this.dragItem.shape, this.dragRotation);
+    const col = Math.floor((pointer.x - GRID_X) / CELL_SIZE);
+    const row = Math.floor((pointer.y - GRID_Y) / CELL_SIZE);
+
+    // Try to place on grid
+    if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS &&
+        this.canPlaceAt(col, row, shape)) {
+      this.placeItem(this.dragItem, col, row, shape);
+
+      // Remove from box
+      icon.destroy();
+      label.destroy();
+      this.boxItems = this.boxItems.filter(bi => bi.item.id !== this.dragItem.id);
+    } else {
+      // Return to box — find original position
+      const boxItem = this.boxItems.find(bi => bi.item.id === this.dragItem.id);
+      if (boxItem) {
+        const idx = this.boxItems.indexOf(boxItem);
+        const cols = 3;
+        const origCol = idx % cols;
+        const origRow = Math.floor(idx / cols);
+        const origX = BOX_X + 45 + origCol * 70;
+        const origY = BOX_Y + 55 + origRow * 80;
+
+        this.tweens.add({
+          targets: icon,
+          x: origX,
+          y: origY,
+          scale: 1,
+          duration: 200,
+          ease: 'Back.easeOut',
+        });
+        label.setVisible(true);
+      }
+
+      icon.setAlpha(1);
+      icon.setDepth(6);
+
+      if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
+        // Was over grid but couldn't place — shake feedback
+        this.cameras.main.shake(80, 0.004);
+      }
+    }
+
+    this.isDragging = false;
+    this.dragItem = null;
+    this.dragIcon = null;
+    this.dragLabel = null;
+  }
+
+  placeItem(item, col, row, shape) {
+    // Write to grid
+    shape.forEach(([c, r]) => {
+      this.grid[row + r][col + c] = {
+        id: item.id,
+        color: item.color,
+      };
+    });
+
+    // Play satisfying thud
+    this.sfx.thud();
+
+    // Place icon on the grid at the center of the shape
+    const minC = Math.min(...shape.map(([c]) => c));
+    const maxC = Math.max(...shape.map(([c]) => c));
+    const minR = Math.min(...shape.map(([, r]) => r));
+    const maxR = Math.max(...shape.map(([, r]) => r));
+    const centerX = GRID_X + (col + (minC + maxC + 1) / 2) * CELL_SIZE;
+    const centerY = GRID_Y + (row + (minR + maxR + 1) / 2) * CELL_SIZE;
+
+    const placedIcon = this.add.text(centerX, centerY, item.icon, {
+      fontSize: '28px',
+    }).setOrigin(0.5).setDepth(4);
+    this.placedItemSprites.push(placedIcon);
+
+    // Drop-in animation: scale bounce
+    placedIcon.setScale(0.3);
+    this.tweens.add({
+      targets: placedIcon,
+      scale: 1,
+      duration: 300,
+      ease: 'Back.easeOut',
+    });
+
+    // Dust particles on placement
+    for (let i = 0; i < 8; i++) {
+      const dust = this.add.circle(centerX, centerY, Phaser.Math.Between(2, 5),
+        Phaser.Math.RND.pick([0xc4943a, 0x8b6914, 0xdaa520, item.color]));
+      const angle = (Math.PI * 2 / 8) * i + Math.random() * 0.5;
+      const dist = Phaser.Math.Between(20, 50);
+      this.tweens.add({
+        targets: dust,
+        x: centerX + Math.cos(angle) * dist,
+        y: centerY + Math.sin(angle) * dist,
+        alpha: 0,
+        scaleX: 0,
+        scaleY: 0,
+        duration: Phaser.Math.Between(300, 500),
+        ease: 'Power2',
+        onComplete: () => dust.destroy(),
+      });
+    }
+
+    // Redraw grid
+    this.drawGrid();
+
+    // Nick commentary
+    const comment = NICK_COMMENTS[item.id];
+    if (comment) {
+      this.commentaryText.setText(comment);
+      this.time.delayedCall(3500, () => {
+        if (this.commentaryText && this.commentaryText.text === comment) {
+          this.commentaryText.setText('');
+        }
+      });
+    }
+
+    // Update progress
+    this.placedCount++;
+    this.progressText.setText(`${this.placedCount} / ${this.totalItems} items placed`);
+
+    // Check for bullseye placement sound
+    if (shape.length >= 4) {
+      this.time.delayedCall(150, () => this.sfx.cheer());
+    }
+
+    // Check completion
+    if (this.placedCount >= this.totalItems) {
+      this.time.delayedCall(1000, () => this.finishGame());
+    }
+  }
+
   getRotatedShape(shape, rotation) {
-    // Rotate shape by 90° increments
     let rotated = shape.map(([c, r]) => [c, r]);
     for (let i = 0; i < rotation % 4; i++) {
       rotated = rotated.map(([c, r]) => [-r, c]);
     }
-    // Normalize to start at 0,0
     const minC = Math.min(...rotated.map(([c]) => c));
     const minR = Math.min(...rotated.map(([, r]) => r));
     return rotated.map(([c, r]) => [c - minC, r - minR]);
-  }
-
-  spawnNextItem() {
-    if (this.currentItemIndex >= this.itemQueue.length) {
-      this.finishGame();
-      return;
-    }
-
-    const itemDef = this.itemQueue[this.currentItemIndex];
-    this.currentItem = itemDef;
-    this.rotation = 0;
-    this.gridCol = Math.floor(GRID_COLS / 2) - 1;
-    this.gridRow = 0;
-
-    // Update sidebar
-    this.itemNameText.setText(itemDef.label);
-    this.itemIconText.setText(itemDef.icon);
-
-    this.progressText.setText(`Item ${this.currentItemIndex + 1} of ${this.itemQueue.length}`);
-
-    this.drawItemPreview();
-    this.updateGhost();
-  }
-
-  drawItemPreview() {
-    this.previewGraphics.clear();
-    if (!this.currentItem) return;
-
-    const shape = this.getRotatedShape(this.currentItem.shape, this.rotation);
-    const previewCellSize = 28;
-
-    // Center the preview
-    const maxC = Math.max(...shape.map(([c]) => c)) + 1;
-    const maxR = Math.max(...shape.map(([, r]) => r)) + 1;
-    const offsetX = this.previewX - (maxC * previewCellSize) / 2;
-    const offsetY = this.previewY - (maxR * previewCellSize) / 2;
-
-    shape.forEach(([c, r]) => {
-      const x = offsetX + c * previewCellSize;
-      const y = offsetY + r * previewCellSize;
-      this.previewGraphics.fillStyle(this.currentItem.color, 0.9);
-      this.previewGraphics.fillRect(x + 1, y + 1, previewCellSize - 2, previewCellSize - 2);
-      this.previewGraphics.lineStyle(1, 0xffffff, 0.4);
-      this.previewGraphics.strokeRect(x + 1, y + 1, previewCellSize - 2, previewCellSize - 2);
-    });
-  }
-
-  updateGhost() {
-    // Clear previous ghost
-    this.ghostGraphics?.clear();
-    if (!this.ghostGraphics) {
-      this.ghostGraphics = this.add.graphics();
-    }
-
-    if (!this.currentItem) return;
-
-    const shape = this.getRotatedShape(this.currentItem.shape, this.rotation);
-    const canPlace = this.canPlaceAt(this.gridCol, this.gridRow, shape);
-
-    shape.forEach(([c, r]) => {
-      const col = this.gridCol + c;
-      const row = this.gridRow + r;
-      if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) return;
-
-      const x = GRID_X + col * CELL_SIZE;
-      const y = GRID_Y + row * CELL_SIZE;
-
-      if (canPlace) {
-        this.ghostGraphics.fillStyle(this.currentItem.color, 0.4);
-        this.ghostGraphics.fillRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
-        this.ghostGraphics.lineStyle(2, 0x4ecca3, 0.8);
-        this.ghostGraphics.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
-      } else {
-        this.ghostGraphics.fillStyle(0xe94560, 0.3);
-        this.ghostGraphics.fillRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
-        this.ghostGraphics.lineStyle(2, 0xe94560, 0.8);
-        this.ghostGraphics.strokeRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
-      }
-    });
   }
 
   canPlaceAt(col, row, shape) {
@@ -348,109 +529,12 @@ export class UnpackingStage extends BaseStage {
     return true;
   }
 
-  moveItem(dc, dr) {
-    if (!this.currentItem || this.isComplete) return;
-
-    const newCol = Phaser.Math.Clamp(this.gridCol + dc, 0, GRID_COLS - 1);
-    const newRow = Phaser.Math.Clamp(this.gridRow + dr, 0, GRID_ROWS - 1);
-
-    if (newCol !== this.gridCol || newRow !== this.gridRow) {
-      this.gridCol = newCol;
-      this.gridRow = newRow;
-      this.sfx.click();
-      this.updateGhost();
-    }
-  }
-
-  rotateItem() {
-    if (!this.currentItem || this.isComplete) return;
-    this.rotation = (this.rotation + 1) % 4;
-    this.sfx.click();
-    this.drawItemPreview();
-    this.updateGhost();
-  }
-
-  placeCurrentItem() {
-    if (!this.currentItem || this.isComplete) return;
-
-    const shape = this.getRotatedShape(this.currentItem.shape, this.rotation);
-
-    if (!this.canPlaceAt(this.gridCol, this.gridRow, shape)) {
-      // Can't place here — flash red
-      this.sfx.sadTrombone();
-      this.cameras.main.shake(100, 0.005);
-      return;
-    }
-
-    // Place item on grid
-    shape.forEach(([c, r]) => {
-      this.grid[this.gridRow + r][this.gridCol + c] = {
-        id: this.currentItem.id,
-        color: this.currentItem.color,
-      };
-    });
-
-    this.placedItems.push(this.currentItem.id);
-    this.sfx.thud();
-    this.score += shape.length * 10;
-
-    // Show Nick's commentary
-    const comment = NICK_COMMENTS[this.currentItemIndex];
-    if (comment) {
-      this.commentaryText.setText(comment.text);
-      this.time.delayedCall(3000, () => {
-        if (this.commentaryText) this.commentaryText.setText('');
-      });
-    }
-
-    // Emit wood chips at placement center
-    const centerCol = this.gridCol + (Math.max(...shape.map(([c]) => c)) + 1) / 2;
-    const centerRow = this.gridRow + (Math.max(...shape.map(([, r]) => r)) + 1) / 2;
-    const cx = GRID_X + centerCol * CELL_SIZE;
-    const cy = GRID_Y + centerRow * CELL_SIZE;
-
-    // Place celebration particles
-    for (let i = 0; i < 6; i++) {
-      const spark = this.add.circle(cx, cy, Phaser.Math.Between(2, 4), this.currentItem.color);
-      const angle = (Math.PI * 2 / 6) * i;
-      const dist = Phaser.Math.Between(15, 40);
-      this.tweens.add({
-        targets: spark,
-        x: cx + Math.cos(angle) * dist,
-        y: cy + Math.sin(angle) * dist,
-        alpha: 0,
-        duration: 400,
-        onComplete: () => spark.destroy(),
-      });
-    }
-
-    // Redraw grid and move to next item
-    this.drawGrid();
-    this.ghostGraphics?.clear();
-    this.currentItemIndex++;
-
-    if (this.currentItemIndex >= this.itemQueue.length) {
-      this.time.delayedCall(800, () => this.finishGame());
-    } else {
-      this.time.delayedCall(500, () => this.spawnNextItem());
-    }
-  }
-
   finishGame() {
     this.isComplete = true;
-    this.currentItem = null;
-    this.previewGraphics.clear();
-    this.ghostGraphics?.clear();
-    this.itemNameText.setText('');
-    this.itemIconText.setText('');
     this.commentaryText.setText('');
-    this.progressText.setText('');
-    this.instructionText.setText('');
-    this.placeBtn.setVisible(false);
-    this.placeBtnText.setVisible(false);
-    this.rotateBtn.setVisible(false);
+    this.hintText.setVisible(false);
 
-    // Calculate coverage score
+    // Calculate coverage
     let filledCells = 0;
     for (let r = 0; r < GRID_ROWS; r++) {
       for (let c = 0; c < GRID_COLS; c++) {
@@ -461,34 +545,45 @@ export class UnpackingStage extends BaseStage {
 
     this.sfx.victory();
 
-    const resultText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40,
+    let coverageComment;
+    if (coverage > 70) coverageComment = '"Cozy! ...maybe TOO cozy."';
+    else if (coverage > 50) coverageComment = '"Room to breathe AND dance!"';
+    else coverageComment = '"Minimalist vibes. Very intentional."';
+
+    const resultBg = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 500, 280, 0x000000, 0.85)
+      .setStrokeStyle(2, 0xffd700)
+      .setDepth(50)
+      .setAlpha(0);
+
+    const resultText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20,
       `HOME SWEET HOME!\n\n` +
-      `All ${ITEMS.length} items placed!\n` +
+      `All ${this.totalItems} items unpacked!\n` +
       `Room coverage: ${coverage}%\n\n` +
-      (coverage > 60 ? '"Cozy!"' : coverage > 40 ? '"Plenty of room to dance!"' : '"Minimalist vibes!"'),
+      coverageComment,
       {
         fontFamily: 'Georgia, serif',
-        fontSize: '28px',
+        fontSize: '26px',
         color: '#ffd700',
         fontStyle: 'bold',
         align: 'center',
       }
-    ).setOrigin(0.5).setAlpha(0);
+    ).setOrigin(0.5).setDepth(51).setAlpha(0);
 
     this.tweens.add({
-      targets: resultText,
+      targets: [resultBg, resultText],
       alpha: 1,
       duration: 800,
     });
 
     // Post-game dialogue
     this.time.delayedCall(4000, () => {
+      resultBg.destroy();
       resultText.destroy();
 
       const dialogueLines = [
         { speaker: 'nick', text: "Okay, I know it looks chaotic, but there's a SYSTEM." },
-        { speaker: 'narrator', text: "There was no system." },
-        { speaker: 'nick', text: "...but it felt like home anyway." },
+        { speaker: 'narrator', text: 'There was no system.' },
+        { speaker: 'nick', text: '...but it felt like home anyway.' },
         { speaker: 'narrator', text: 'Two lives, one space. The adventure was just beginning.' },
       ];
 
