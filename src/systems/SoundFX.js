@@ -11,12 +11,23 @@ export class SoundFX {
     // Get or create Web Audio context
     try {
       this.ctx = scene.sound.context || new (window.AudioContext || window.webkitAudioContext)();
+      // Resume AudioContext on first user interaction (browser autoplay policy)
+      if (this.ctx.state === 'suspended') {
+        const resume = () => {
+          this.ctx.resume();
+          document.removeEventListener('pointerdown', resume);
+          document.removeEventListener('keydown', resume);
+        };
+        document.addEventListener('pointerdown', resume, { once: false });
+        document.addEventListener('keydown', resume, { once: false });
+      }
     } catch {
       this.enabled = false;
     }
   }
 
   _gain(vol = 1) {
+    if (this.ctx.state === 'suspended') this.ctx.resume();
     const g = this.ctx.createGain();
     g.gain.value = this.volume * vol;
     g.connect(this.ctx.destination);
@@ -222,6 +233,11 @@ export class SoundFX {
     if (!this.enabled || this._musicPlaying) return;
     this._musicPlaying = true;
     this._musicVolume = 0.18;
+
+    // Ensure AudioContext is running (browser autoplay policy)
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
 
     // Master gain for music
     this._musicGain = this.ctx.createGain();
@@ -429,7 +445,7 @@ export class SoundFX {
 
   _playMelodyNote(t) {
     const freq = this._melodyNotes[Math.floor(Math.random() * this._melodyNotes.length)];
-    const dur = Phaser ? 0.4 + Math.random() * 0.4 : 0.5;
+    const dur = 0.4 + Math.random() * 0.4;
 
     const osc = this.ctx.createOscillator();
     osc.type = 'sine';
