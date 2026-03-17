@@ -21,11 +21,11 @@ const DIFFICULTY = {
   easy: {
     label: 'Easy',
     description: 'Nick had a few drinks',
-    accuracyRange: 60,
-    hitChance: 0.55,
-    powerMin: 50,
-    powerMax: 85,
-    missChance: 0.25,
+    accuracyRange: 42,
+    hitChance: 0.68,
+    powerMin: 60,
+    powerMax: 90,
+    missChance: 0.15,
   },
   medium: {
     label: 'Medium',
@@ -1211,7 +1211,7 @@ export class AxeThrowingStage extends BaseStage {
         ];
       }
 
-      this.dialogue = new DialogueSystem(this);
+      this.dialogue = new DialogueSystem(this, this.sfx);
       this.dialogue.createUI();
       this.dialogue.show(dialogueLines, () => {
         this.sfx.stopMusic();

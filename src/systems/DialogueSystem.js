@@ -2,8 +2,9 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config.js';
 
 export class DialogueSystem {
-  constructor(scene) {
+  constructor(scene, sfx) {
     this.scene = scene;
+    this.sfx = sfx || null;
     this.dialogueQueue = [];
     this.isActive = false;
     this.currentIndex = 0;
@@ -122,6 +123,13 @@ export class DialogueSystem {
       callback: () => {
         charIndex++;
         this.dialogueText.setText(fullText.substring(0, charIndex));
+
+        // Play typewriter tick on non-space characters
+        const ch = fullText[charIndex - 1];
+        if (this.sfx && ch && ch !== ' ') {
+          this.sfx.typewriterTick();
+        }
+
         if (charIndex >= fullText.length) {
           this.continuePrompt.setAlpha(1);
         }

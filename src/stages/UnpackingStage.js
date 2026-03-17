@@ -587,7 +587,7 @@ export class UnpackingStage extends BaseStage {
         { speaker: 'narrator', text: 'Two lives, one space. The adventure was just beginning.' },
       ];
 
-      this.dialogue = new DialogueSystem(this);
+      this.dialogue = new DialogueSystem(this, this.sfx);
       this.dialogue.createUI();
       this.dialogue.show(dialogueLines, () => {
         this.sfx.stopMusic();

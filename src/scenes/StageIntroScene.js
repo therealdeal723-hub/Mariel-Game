@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, COLORS, STAGES } from '../config.js';
 import { DialogueSystem } from '../systems/DialogueSystem.js';
+import { SoundFX } from '../systems/SoundFX.js';
 import { TransitionManager } from '../systems/TransitionManager.js';
 
 export class StageIntroScene extends Phaser.Scene {
@@ -65,7 +66,9 @@ export class StageIntroScene extends Phaser.Scene {
     });
 
     // Create dialogue system and show intro dialogue after heading animation
-    this.dialogue = new DialogueSystem(this);
+    this.sfx = new SoundFX(this);
+    this.events.on('shutdown', () => this.sfx.destroy());
+    this.dialogue = new DialogueSystem(this, this.sfx);
     this.dialogue.createUI();
 
     this.time.delayedCall(1500, () => {

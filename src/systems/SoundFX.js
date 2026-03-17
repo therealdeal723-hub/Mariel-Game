@@ -29,7 +29,10 @@ export class SoundFX {
   }
 
   _gain(vol = 1) {
-    this._ensureContext();
+    // Resume context synchronously if possible (already running is a no-op)
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
     const g = this.ctx.createGain();
     g.gain.value = this.volume * vol;
     g.connect(this.ctx.destination);
@@ -159,6 +162,29 @@ export class SoundFX {
       osc.start(start);
       osc.stop(start + 0.25);
     });
+  }
+
+  /** Soft typewriter tick for dialogue text reveal */
+  typewriterTick() {
+    if (!this.enabled) return;
+    const t = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.value = 800 + Math.random() * 200; // slight pitch variation
+
+    const gain = this._gain(0.06);
+    gain.gain.setValueAtTime(0.06 * this.volume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 600;
+
+    osc.connect(filter);
+    filter.connect(gain);
+    osc.start(t);
+    osc.stop(t + 0.03);
   }
 
   /** Click sound for UI buttons */
@@ -318,18 +344,26 @@ export class SoundFX {
     this._musicPlaying = true;
     this._musicVolume = 0.18;
 
+    // Clean up any stale kickoff listeners from a previous instance
+    if (this._musicKickoff) {
+      document.removeEventListener('pointerdown', this._musicKickoff);
+      document.removeEventListener('keydown', this._musicKickoff);
+      this._musicKickoff = null;
+    }
+
     // If the AudioContext is suspended (browser autoplay policy),
     // wait for a user gesture to resume it, then start playback.
     if (this.ctx.state !== 'running') {
-      const kickoff = () => {
-        document.removeEventListener('pointerdown', kickoff);
-        document.removeEventListener('keydown', kickoff);
+      this._musicKickoff = () => {
+        document.removeEventListener('pointerdown', this._musicKickoff);
+        document.removeEventListener('keydown', this._musicKickoff);
+        this._musicKickoff = null;
         this.ctx.resume().then(() => {
-          if (this._musicPlaying) this._initMusicGraph();
+          if (this._musicPlaying && !this._musicGain) this._initMusicGraph();
         });
       };
-      document.addEventListener('pointerdown', kickoff);
-      document.addEventListener('keydown', kickoff);
+      document.addEventListener('pointerdown', this._musicKickoff);
+      document.addEventListener('keydown', this._musicKickoff);
       return;
     }
 
@@ -614,5 +648,12 @@ export class SoundFX {
     this.stopChargeTone();
     this.stopMusic(0);
     this._musicPlaying = false;
+
+    // Remove any pending kickoff listener
+    if (this._musicKickoff) {
+      document.removeEventListener('pointerdown', this._musicKickoff);
+      document.removeEventListener('keydown', this._musicKickoff);
+      this._musicKickoff = null;
+    }
   }
 }
