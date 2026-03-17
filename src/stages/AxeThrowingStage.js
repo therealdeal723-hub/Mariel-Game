@@ -494,10 +494,12 @@ export class AxeThrowingStage extends BaseStage {
         this.powerDirection = 1;
         this.throwBtnText.setText('STOP');
         this.throwBtn.setFillStyle(0xe94560);
+        this.sfx.startChargeTone();
       } else {
         this.isPowerCharging = false;
         this.throwBtnText.setText('THROW');
         this.throwBtn.setFillStyle(0x4ecca3);
+        this.sfx.stopChargeTone();
         this.throwAxe(this.aimX, this.aimY, this.powerLevel);
       }
     });
@@ -584,10 +586,12 @@ export class AxeThrowingStage extends BaseStage {
         this.powerDirection = 1;
         this.throwBtnText.setText('STOP');
         this.throwBtn.setFillStyle(0xe94560);
+        this.sfx.startChargeTone();
       } else {
         this.isPowerCharging = false;
         this.throwBtnText.setText('THROW');
         this.throwBtn.setFillStyle(0x4ecca3);
+        this.sfx.stopChargeTone();
         this.throwAxe(this.aimX, this.aimY, this.powerLevel);
       }
     });
@@ -731,7 +735,7 @@ export class AxeThrowingStage extends BaseStage {
         this.powerBar.setFillStyle(0xe94560);
       }
 
-      this.sfx.setPowerLevel(this.powerLevel);
+      this.sfx.updateChargeTone(this.powerLevel);
       this.drawAimLine();
     }
   }
@@ -896,6 +900,7 @@ export class AxeThrowingStage extends BaseStage {
     this.aimCrosshair.setVisible(false);
     this.aimLine.setVisible(false);
     this.isPowerCharging = false;
+    this.sfx.stopChargeTone();
     this.powerBar.height = 0;
     this.powerBar.y = this.powerBarBottom;
 
