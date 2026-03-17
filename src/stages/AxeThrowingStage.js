@@ -21,29 +21,29 @@ const DIFFICULTY = {
   easy: {
     label: 'Easy',
     description: 'Nick had a few drinks',
-    accuracyRange: 60,
-    hitChance: 0.55,
-    powerMin: 50,
-    powerMax: 85,
-    missChance: 0.25,
+    accuracyRange: 50,
+    hitChance: 0.60,
+    powerMin: 55,
+    powerMax: 82,
+    missChance: 0.20,
   },
   medium: {
     label: 'Medium',
     description: 'Nick is warmed up',
-    accuracyRange: 30,
-    hitChance: 0.75,
-    powerMin: 70,
+    accuracyRange: 28,
+    hitChance: 0.78,
+    powerMin: 75,
     powerMax: 95,
-    missChance: 0.12,
+    missChance: 0.08,
   },
   hard: {
     label: 'Hard',
     description: 'Nick is locked in',
-    accuracyRange: 12,
-    hitChance: 0.92,
-    powerMin: 90,
+    accuracyRange: 10,
+    hitChance: 0.93,
+    powerMin: 92,
     powerMax: 100,
-    missChance: 0.03,
+    missChance: 0.02,
   },
 };
 
@@ -70,6 +70,36 @@ const NICK_MISS_REACTIONS = [
   '"My hand slipped!"',
   '"I meant to do that."',
   '"The axe is broken."',
+];
+
+// Nick heckling during Mariel's practice throws
+const NICK_PRACTICE_HECKLES = [
+  '"You hold it like a spatula."',
+  '"Are you aiming at the wall?"',
+  '"My grandma throws harder."',
+  '"Okay okay, not bad. For a beginner."',
+  '"I\'m timing you, by the way."',
+  '"This is painful to watch."',
+  '"...you know the POINTY end goes forward, right?"',
+];
+
+// Nick reacts to Mariel's throws during the game
+const NICK_REACT_PLAYER_BULLSEYE = [
+  '"WHAT. No. That didn\'t count."',
+  '"Okay I\'m not even mad, that was sick."',
+  '"...I taught her that."',
+];
+
+const NICK_REACT_PLAYER_GOOD = [
+  '"Beginner\'s luck."',
+  '"Fine. Fine! That was okay."',
+  '"She\'s warming up... this is bad."',
+];
+
+const NICK_REACT_PLAYER_MISS = [
+  '"Ha! Called it."',
+  '"That\'s more like it."',
+  '"Don\'t worry, the wall needed a hole anyway."',
 ];
 
 // Game modes
@@ -101,6 +131,9 @@ export class AxeThrowingStage extends BaseStage {
     // Track where the mouse is aiming
     this.aimX = TARGET_X;
     this.aimY = TARGET_Y;
+
+    // Axes that stick in the board
+    this.stuckAxes = [];
 
     // Sound effects & music
     this.sfx = new SoundFX(this);
@@ -747,6 +780,7 @@ export class AxeThrowingStage extends BaseStage {
     this.isPlayerTurn = true;
     this.isThrowInProgress = false;
     this.practiceThrows = 0;
+    this.minPracticeThrows = 2;
 
     this.setScoreboardVisible(false);
     this.roundText.setVisible(true);
@@ -757,10 +791,9 @@ export class AxeThrowingStage extends BaseStage {
     this.aimCrosshair.setVisible(true);
     this.commentaryText.setText('');
 
-    this.time.delayedCall(500, () => {
-      this.startGameBtn.setVisible(true);
-      this.startGameBtnText.setVisible(true);
-    });
+    // Don't show Start Game until minimum practice throws
+    this.startGameBtn.setVisible(false);
+    this.startGameBtnText.setVisible(false);
   }
 
   startActualGame() {
@@ -772,6 +805,9 @@ export class AxeThrowingStage extends BaseStage {
     this.roundScores = [];
     this.currentRoundPlayerScore = 0;
     this.currentRoundNickScore = 0;
+
+    // Clear practice axes from the board
+    this.clearStuckAxes();
 
     // Hide practice UI
     this.startGameBtn.setVisible(false);
@@ -792,6 +828,20 @@ export class AxeThrowingStage extends BaseStage {
 
   // ─── Game Mode ────────────────────────────────────────────
 
+  clearStuckAxes() {
+    this.stuckAxes.forEach(axe => {
+      if (axe && axe.active) {
+        this.tweens.add({
+          targets: axe,
+          alpha: 0,
+          duration: 300,
+          onComplete: () => axe.destroy(),
+        });
+      }
+    });
+    this.stuckAxes = [];
+  }
+
   startRound() {
     this.currentRound++;
     this.roundText.setText(`Round ${this.currentRound} of ${TOTAL_ROUNDS}`);
@@ -800,6 +850,9 @@ export class AxeThrowingStage extends BaseStage {
       this.endGame();
       return;
     }
+
+    // Clear axes from the previous round
+    this.clearStuckAxes();
 
     // Reset per-round scores
     this.currentRoundPlayerScore = 0;
@@ -1025,10 +1078,15 @@ export class AxeThrowingStage extends BaseStage {
       this.emitWoodChips(x, y, points >= 30 ? 12 : 6);
 
       if (points === 50) {
-        // Bullseye gets sparks and fanfare
+        // BULLSEYE — full juice: air horn, sparks, screen shake
         this.time.delayedCall(100, () => {
-          this.sfx.bullseye();
-          this.emitSparks(x, y, 16);
+          this.sfx.airHorn();
+          this.emitSparks(x, y, 30);
+          this.cameras.main.shake(300, 0.012);
+        });
+        // Second wave of sparks for extra impact
+        this.time.delayedCall(250, () => {
+          this.emitSparks(x, y, 20);
         });
       } else if (points >= 30) {
         this.time.delayedCall(100, () => this.sfx.cheer());
@@ -1048,13 +1106,49 @@ export class AxeThrowingStage extends BaseStage {
         repeat: 3,
         ease: 'Sine.easeInOut',
       });
+
+      // Axe stays stuck in the board
+      this.stuckAxes.push(axe);
+    } else {
+      // Missed the board — axe falls off screen
+      this.tweens.add({
+        targets: axe,
+        y: y + 200,
+        alpha: 0,
+        angle: axe.angle + Phaser.Math.Between(-90, 90),
+        duration: 600,
+        ease: 'Power2',
+        onComplete: () => axe.destroy(),
+      });
     }
 
-    // In practice mode, just show the score popup
+    // In practice mode, just show the score popup + Nick heckles
     if (this.gameMode === MODE_PRACTICE) {
       this.practiceThrows++;
       this.showScorePopup(x, y, scoreLabel, points, false);
-      this.time.delayedCall(800, () => axe.destroy());
+
+      // Nick heckles from the sideline
+      if (this.practiceThrows <= NICK_PRACTICE_HECKLES.length) {
+        const heckle = NICK_PRACTICE_HECKLES[this.practiceThrows - 1];
+        this.commentaryText.setText(heckle);
+        this.time.delayedCall(2500, () => {
+          if (this.commentaryText.text === heckle) this.commentaryText.setText('');
+        });
+      }
+
+      // Show "Start Game" once minimum practice throws are done
+      if (this.practiceThrows >= this.minPracticeThrows && !this.startGameBtn.visible) {
+        this.startGameBtn.setVisible(true);
+        this.startGameBtnText.setVisible(true);
+        this.startGameBtn.setAlpha(0);
+        this.startGameBtnText.setAlpha(0);
+        this.tweens.add({
+          targets: [this.startGameBtn, this.startGameBtnText],
+          alpha: 1,
+          duration: 400,
+        });
+      }
+
       this.time.delayedCall(1000, () => {
         this.isThrowInProgress = false;
         this.aimCrosshair.setVisible(true);
@@ -1081,13 +1175,22 @@ export class AxeThrowingStage extends BaseStage {
       this.playerScore += points;
       this.playerScoreText.setText(this.playerScore.toString());
       this.currentRoundPlayerScore = points;
+
+      // Nick reacts to Mariel's throw
+      let reaction;
+      if (points === 50) {
+        reaction = NICK_REACT_PLAYER_BULLSEYE[Phaser.Math.Between(0, NICK_REACT_PLAYER_BULLSEYE.length - 1)];
+      } else if (points >= 30) {
+        reaction = NICK_REACT_PLAYER_GOOD[Phaser.Math.Between(0, NICK_REACT_PLAYER_GOOD.length - 1)];
+      } else if (points === 0) {
+        reaction = NICK_REACT_PLAYER_MISS[Phaser.Math.Between(0, NICK_REACT_PLAYER_MISS.length - 1)];
+      }
+      if (reaction) {
+        this.commentaryText.setText(reaction);
+      }
     }
 
     this.showScorePopup(x, y, scoreLabel, points, isNick);
-
-    this.time.delayedCall(800, () => {
-      axe.destroy();
-    });
 
     // Next turn
     this.time.delayedCall(1500, () => {
@@ -1211,7 +1314,7 @@ export class AxeThrowingStage extends BaseStage {
         ];
       }
 
-      this.dialogue = new DialogueSystem(this);
+      this.dialogue = new DialogueSystem(this, this.sfx);
       this.dialogue.createUI();
       this.dialogue.show(dialogueLines, () => {
         this.sfx.stopMusic();
