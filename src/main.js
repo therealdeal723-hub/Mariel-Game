@@ -7,6 +7,7 @@ import { StageIntroScene } from './scenes/StageIntroScene.js';
 import { StageOutroScene } from './scenes/StageOutroScene.js';
 import { ProposalScene } from './scenes/ProposalScene.js';
 import { AxeThrowingStage } from './stages/AxeThrowingStage.js';
+import { UnpackingStage } from './stages/UnpackingStage.js';
 
 // Register all scenes
 const config = {
@@ -18,6 +19,7 @@ const config = {
     StageIntroScene,
     StageOutroScene,
     AxeThrowingStage,
+    UnpackingStage,
     ProposalScene,
   ],
 };
