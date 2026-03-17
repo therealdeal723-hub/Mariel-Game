@@ -10,24 +10,26 @@ export class SoundFX {
 
     // Get or create Web Audio context
     try {
-      this.ctx = scene.sound.context || new (window.AudioContext || window.webkitAudioContext)();
-      // Resume AudioContext on first user interaction (browser autoplay policy)
-      if (this.ctx.state === 'suspended') {
-        const resume = () => {
-          this.ctx.resume();
-          document.removeEventListener('pointerdown', resume);
-          document.removeEventListener('keydown', resume);
-        };
-        document.addEventListener('pointerdown', resume, { once: false });
-        document.addEventListener('keydown', resume, { once: false });
-      }
+      // Prefer Phaser's WebAudio context if available
+      const phaserCtx = scene.sound && scene.sound.context;
+      this.ctx = phaserCtx || new (window.AudioContext || window.webkitAudioContext)();
     } catch {
       this.enabled = false;
     }
   }
 
+  /**
+   * Ensure AudioContext is running. Returns a Promise that resolves
+   * once the context is in the 'running' state.
+   */
+  _ensureContext() {
+    if (!this.ctx) return Promise.resolve();
+    if (this.ctx.state === 'running') return Promise.resolve();
+    return this.ctx.resume();
+  }
+
   _gain(vol = 1) {
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this._ensureContext();
     const g = this.ctx.createGain();
     g.gain.value = this.volume * vol;
     g.connect(this.ctx.destination);
@@ -234,11 +236,25 @@ export class SoundFX {
     this._musicPlaying = true;
     this._musicVolume = 0.18;
 
-    // Ensure AudioContext is running (browser autoplay policy)
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    // If the AudioContext is suspended (browser autoplay policy),
+    // wait for a user gesture to resume it, then start playback.
+    if (this.ctx.state !== 'running') {
+      const kickoff = () => {
+        document.removeEventListener('pointerdown', kickoff);
+        document.removeEventListener('keydown', kickoff);
+        this.ctx.resume().then(() => {
+          if (this._musicPlaying) this._initMusicGraph();
+        });
+      };
+      document.addEventListener('pointerdown', kickoff);
+      document.addEventListener('keydown', kickoff);
+      return;
     }
 
+    this._initMusicGraph();
+  }
+
+  _initMusicGraph() {
     // Master gain for music
     this._musicGain = this.ctx.createGain();
     this._musicGain.gain.value = this._musicVolume;
