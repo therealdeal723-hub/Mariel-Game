@@ -211,4 +211,293 @@ export class SoundFX {
   setPowerLevel(power) {
     this._lastPower = power;
   }
+
+  // ─── Lo-fi Background Music ────────────────────────────────
+
+  /**
+   * Starts a procedural lo-fi chill beat loop.
+   * Call stopMusic() to fade it out.
+   */
+  startMusic() {
+    if (!this.enabled || this._musicPlaying) return;
+    this._musicPlaying = true;
+    this._musicVolume = 0.18;
+
+    // Master gain for music
+    this._musicGain = this.ctx.createGain();
+    this._musicGain.gain.value = this._musicVolume;
+    this._musicGain.connect(this.ctx.destination);
+
+    // Lo-fi filter — warm, muffled sound
+    this._musicFilter = this.ctx.createBiquadFilter();
+    this._musicFilter.type = 'lowpass';
+    this._musicFilter.frequency.value = 900;
+    this._musicFilter.Q.value = 1.5;
+    this._musicFilter.connect(this._musicGain);
+
+    // Chord progression (jazzy lo-fi: Cmaj7 → Am7 → Fmaj7 → G7)
+    this._chords = [
+      [261.63, 329.63, 392.00, 493.88],  // Cmaj7
+      [220.00, 261.63, 329.63, 392.00],  // Am7
+      [174.61, 220.00, 261.63, 329.63],  // Fmaj7
+      [196.00, 246.94, 293.66, 349.23],  // G7
+    ];
+    this._chordIndex = 0;
+    this._beatIndex = 0;
+
+    // Tempo: ~75 BPM, each beat = 800ms
+    this._beatInterval = 800;
+    this._beatsPerChord = 8; // 2 bars per chord
+
+    // Bass notes for each chord
+    this._bassNotes = [130.81, 110.00, 87.31, 98.00]; // C3, A2, F2, G2
+
+    // Pentatonic melody notes (C minor pentatonic for that lo-fi feel)
+    this._melodyNotes = [261.63, 293.66, 311.13, 392.00, 466.16, 523.25];
+
+    this._scheduleNextBeat();
+  }
+
+  _scheduleNextBeat() {
+    if (!this._musicPlaying) return;
+
+    const t = this.ctx.currentTime;
+    const beat = this._beatIndex % this._beatsPerChord;
+
+    // Advance chord every _beatsPerChord beats
+    if (beat === 0 && this._beatIndex > 0) {
+      this._chordIndex = (this._chordIndex + 1) % this._chords.length;
+    }
+
+    const chord = this._chords[this._chordIndex];
+    const bass = this._bassNotes[this._chordIndex];
+
+    // ── Chord pad (every beat, sustained) ──
+    if (beat === 0 || beat === 4) {
+      this._playChordPad(t, chord);
+    }
+
+    // ── Bass (beats 0 and 4) ──
+    if (beat === 0 || beat === 4) {
+      this._playBass(t, bass);
+    }
+
+    // ── Kick drum (beats 0, 4) ──
+    if (beat === 0 || beat === 4) {
+      this._playKick(t);
+    }
+
+    // ── Snare/clap (beats 2, 6) — lazy lo-fi snare ──
+    if (beat === 2 || beat === 6) {
+      this._playSnare(t);
+    }
+
+    // ── Hi-hat (every beat, with swing) ──
+    this._playHiHat(t, beat % 2 === 1);
+
+    // ── Melody (random notes on some beats for that wandering feel) ──
+    if (Math.random() < 0.35) {
+      const delay = Math.random() * 0.15; // slight humanization
+      this._playMelodyNote(t + delay);
+    }
+
+    // ── Vinyl crackle texture (continuous subtle noise) ──
+    if (beat === 0) {
+      this._playVinylCrackle(t);
+    }
+
+    this._beatIndex++;
+
+    // Schedule next beat
+    this._musicTimer = setTimeout(() => {
+      this._scheduleNextBeat();
+    }, this._beatInterval);
+  }
+
+  _playChordPad(t, chord) {
+    const dur = this._beatInterval * 4 / 1000; // sustain for 4 beats
+    chord.forEach((freq) => {
+      const osc = this.ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+
+      // Slight detune for warmth
+      osc.detune.value = (Math.random() - 0.5) * 8;
+
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.035, t + 0.1);
+      g.gain.setValueAtTime(0.035, t + dur - 0.3);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+
+      osc.connect(g);
+      g.connect(this._musicFilter);
+      osc.start(t);
+      osc.stop(t + dur);
+    });
+  }
+
+  _playBass(t, freq) {
+    const dur = this._beatInterval * 2 / 1000;
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.12, t);
+    g.gain.exponentialRampToValueAtTime(0.01, t + dur);
+
+    osc.connect(g);
+    g.connect(this._musicFilter);
+    osc.start(t);
+    osc.stop(t + dur);
+  }
+
+  _playKick(t) {
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, t);
+    osc.frequency.exponentialRampToValueAtTime(30, t + 0.12);
+
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.2, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+
+    osc.connect(g);
+    g.connect(this._musicGain);
+    osc.start(t);
+    osc.stop(t + 0.2);
+  }
+
+  _playSnare(t) {
+    // Noise burst for snare
+    const dur = 0.12;
+    const bufLen = Math.floor(this.ctx.sampleRate * dur);
+    const buf = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufLen);
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buf;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 3000;
+    filter.Q.value = 0.8;
+
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.08, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+    noise.connect(filter);
+    filter.connect(g);
+    g.connect(this._musicGain);
+    noise.start(t);
+    noise.stop(t + dur);
+  }
+
+  _playHiHat(t, isOffbeat) {
+    const dur = isOffbeat ? 0.04 : 0.06;
+    const vol = isOffbeat ? 0.025 : 0.04;
+
+    const bufLen = Math.floor(this.ctx.sampleRate * dur);
+    const buf = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufLen; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufLen);
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buf;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 7000;
+
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+    noise.connect(filter);
+    filter.connect(g);
+    g.connect(this._musicGain);
+    noise.start(t);
+    noise.stop(t + dur);
+  }
+
+  _playMelodyNote(t) {
+    const freq = this._melodyNotes[Math.floor(Math.random() * this._melodyNotes.length)];
+    const dur = Phaser ? 0.4 + Math.random() * 0.4 : 0.5;
+
+    const osc = this.ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    osc.detune.value = (Math.random() - 0.5) * 10;
+
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.04, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+    osc.connect(g);
+    g.connect(this._musicFilter);
+    osc.start(t);
+    osc.stop(t + dur + 0.05);
+  }
+
+  _playVinylCrackle(t) {
+    // Subtle noise texture — plays for the full chord duration
+    const dur = this._beatInterval * this._beatsPerChord / 1000;
+    const bufLen = Math.floor(this.ctx.sampleRate * dur);
+    const buf = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
+    const data = buf.getChannelData(0);
+
+    for (let i = 0; i < bufLen; i++) {
+      // Sparse crackle: mostly silence with random pops
+      data[i] = Math.random() < 0.002 ? (Math.random() - 0.5) * 0.8 : 0;
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buf;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 4000;
+    filter.Q.value = 0.5;
+
+    const g = this.ctx.createGain();
+    g.gain.value = 0.04;
+
+    noise.connect(filter);
+    filter.connect(g);
+    g.connect(this._musicGain);
+    noise.start(t);
+    noise.stop(t + dur);
+  }
+
+  /** Fade out and stop the background music */
+  stopMusic(fadeDuration = 2000) {
+    if (!this._musicPlaying) return;
+    this._musicPlaying = false;
+
+    if (this._musicTimer) {
+      clearTimeout(this._musicTimer);
+      this._musicTimer = null;
+    }
+
+    // Fade out the master gain
+    if (this._musicGain) {
+      const t = this.ctx.currentTime;
+      this._musicGain.gain.setValueAtTime(this._musicGain.gain.value, t);
+      this._musicGain.gain.linearRampToValueAtTime(0, t + fadeDuration / 1000);
+    }
+  }
+
+  /** Clean up when scene is destroyed */
+  destroy() {
+    this.stopMusic(0);
+    this._musicPlaying = false;
+  }
 }

@@ -102,8 +102,12 @@ export class AxeThrowingStage extends BaseStage {
     this.aimX = TARGET_X;
     this.aimY = TARGET_Y;
 
-    // Sound effects
+    // Sound effects & music
     this.sfx = new SoundFX(this);
+    this.sfx.startMusic();
+
+    // Stop music when scene shuts down (back button, etc.)
+    this.events.on('shutdown', () => this.sfx.destroy());
 
     this.createBackground();
     this.createTarget();
@@ -1205,6 +1209,7 @@ export class AxeThrowingStage extends BaseStage {
       this.dialogue = new DialogueSystem(this);
       this.dialogue.createUI();
       this.dialogue.show(dialogueLines, () => {
+        this.sfx.stopMusic();
         this.completeStage();
       });
     });
@@ -1252,6 +1257,7 @@ export class AxeThrowingStage extends BaseStage {
 
   restartGame() {
     // Clean up and restart the entire scene
+    this.sfx.stopMusic(0);
     this.hideReplayButton();
     this.roundTrackerVisible = false;
     this.roundTrackerObjects.forEach(obj => obj.destroy());
