@@ -111,6 +111,16 @@ export class AxeThrowingStage extends BaseStage {
     super('AxeThrowingStage');
   }
 
+  /** Detect whether we're on a touch-primary device (phone/tablet) vs desktop */
+  get isMobile() {
+    // pointer:fine = mouse/trackpad; pointer:coarse = finger/stylus
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+      return true;
+    }
+    // Fallback: no fine pointer and has touch
+    return navigator.maxTouchPoints > 0 && !(window.matchMedia && window.matchMedia('(pointer: fine)').matches);
+  }
+
   create() {
     // Game state
     this.playerScore = 0;
@@ -497,14 +507,15 @@ export class AxeThrowingStage extends BaseStage {
       color: '#aaaaaa',
     }).setOrigin(0.5);
 
-    // Spacebar hint
+    // Spacebar hint (desktop only)
     this.spaceHint = this.add.text(80, GAME_HEIGHT / 2 - 170, 'SPACE', {
       fontFamily: 'Arial',
       fontSize: '11px',
       color: '#4ecca3',
     }).setOrigin(0.5);
+    if (this.isMobile) this.spaceHint.setVisible(false);
 
-    // Mobile throw button (below power bar)
+    // Throw button (mobile only — desktop uses spacebar)
     this.throwBtn = this.add.rectangle(80, GAME_HEIGHT / 2 + 210, 70, 36, 0x4ecca3, 0.9)
       .setStrokeStyle(2, 0xffffff)
       .setInteractive({ useHandCursor: true });
@@ -514,6 +525,12 @@ export class AxeThrowingStage extends BaseStage {
       color: '#1a1a2e',
       fontStyle: 'bold',
     }).setOrigin(0.5);
+
+    // Hide throw button on desktop (spacebar is the primary control)
+    if (!this.isMobile) {
+      this.throwBtn.setVisible(false);
+      this.throwBtnText.setVisible(false);
+    }
 
     this.throwBtn.on('pointerover', () => this.throwBtn.setFillStyle(0x6eeec3));
     this.throwBtn.on('pointerout', () => this.throwBtn.setFillStyle(0x4ecca3));
@@ -598,15 +615,30 @@ export class AxeThrowingStage extends BaseStage {
     this.difficultyUI = [];
     this.createDifficultyUI();
 
-    // Input handling - mouse moves the crosshair/aim
-    this.input.on('pointermove', (pointer) => {
-      if (this.canPlayerAct()) {
-        this.aimX = Phaser.Math.Clamp(pointer.x, TARGET_X - BOARD_RADIUS * 1.5, TARGET_X + BOARD_RADIUS * 1.5);
-        this.aimY = Phaser.Math.Clamp(pointer.y, TARGET_Y - BOARD_RADIUS * 1.5, TARGET_Y + BOARD_RADIUS * 1.5);
-        this.aimCrosshair.setPosition(this.aimX, this.aimY);
-        this.drawAimLine();
-      }
-    });
+    // Input handling — different schemes for desktop vs mobile
+    if (this.isMobile) {
+      // MOBILE: tap on the target area to place the crosshair
+      this.input.on('pointerdown', (pointer) => {
+        if (!this.canPlayerAct()) return;
+        // Only register taps in the target region (not on the power bar / buttons)
+        if (pointer.x > 200) {
+          this.aimX = Phaser.Math.Clamp(pointer.x, TARGET_X - BOARD_RADIUS * 1.5, TARGET_X + BOARD_RADIUS * 1.5);
+          this.aimY = Phaser.Math.Clamp(pointer.y, TARGET_Y - BOARD_RADIUS * 1.5, TARGET_Y + BOARD_RADIUS * 1.5);
+          this.aimCrosshair.setPosition(this.aimX, this.aimY);
+          this.drawAimLine();
+        }
+      });
+    } else {
+      // DESKTOP: mouse continuously moves the crosshair
+      this.input.on('pointermove', (pointer) => {
+        if (this.canPlayerAct()) {
+          this.aimX = Phaser.Math.Clamp(pointer.x, TARGET_X - BOARD_RADIUS * 1.5, TARGET_X + BOARD_RADIUS * 1.5);
+          this.aimY = Phaser.Math.Clamp(pointer.y, TARGET_Y - BOARD_RADIUS * 1.5, TARGET_Y + BOARD_RADIUS * 1.5);
+          this.aimCrosshair.setPosition(this.aimX, this.aimY);
+          this.drawAimLine();
+        }
+      });
+    }
 
     // Spacebar for power
     this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -787,7 +819,11 @@ export class AxeThrowingStage extends BaseStage {
     this.roundText.setText('PRACTICE MODE');
     this.roundText.setY(75);
 
-    this.instructionText.setText('Aim \u2022 SPACE or THROW button to charge & release \u2022 Practice first!');
+    this.instructionText.setText(
+      this.isMobile
+        ? 'Tap target to aim \u2022 THROW button to charge & release \u2022 Practice first!'
+        : 'Aim with mouse \u2022 SPACE to charge & release \u2022 Practice first!'
+    );
     this.aimCrosshair.setVisible(true);
     this.commentaryText.setText('');
 
@@ -869,7 +905,11 @@ export class AxeThrowingStage extends BaseStage {
     this.isPlayerTurn = true;
     this.isThrowInProgress = false;
     this.aimCrosshair.setVisible(true);
-    this.instructionText.setText('Aim \u2022 SPACE or THROW button to charge & release!');
+    this.instructionText.setText(
+      this.isMobile
+        ? 'Tap target to aim \u2022 THROW button to charge & release!'
+        : 'Aim with mouse \u2022 SPACE to charge & release!'
+    );
     this.commentaryText.setText('');
 
     this.playerSprite.setVisible(true);
