@@ -16,6 +16,8 @@ const BOX_X = 40;
 const BOX_Y = 160;
 const BOX_W = 240;
 const BOX_H = 400;
+const BOX_CENTER_X = BOX_X + BOX_W / 2;
+const BOX_CENTER_Y = BOX_Y + BOX_H / 2;
 
 // Items — each has a multi-cell shape, color, label, and emoji icon
 const ITEMS = [
@@ -66,9 +68,15 @@ export class UnpackingStage extends BaseStage {
     this.isComplete = false;
     this.isDragging = false;
     this.dragItem = null;
-    this.dragSprite = null;
+    this.dragIcon = null;
     this.dragRotation = 0;
-    this.placedItemSprites = []; // track placed sprites for icon rendering
+    this.dragSource = null; // 'box' or 'room'
+    this.dragRoomData = null; // when rearranging: { col, row, shape, spriteRecord }
+    this.placedItemSprites = []; // { sprite, item, col, row, shape, fillScale }
+
+    // Shuffled item queue — items pop out one at a time
+    this.itemQueue = Phaser.Utils.Array.Shuffle([...ITEMS]);
+    this.currentBoxItem = null; // the item currently sitting on top of the box
 
     this.createBackground();
     this.createRoom();
@@ -98,15 +106,25 @@ export class UnpackingStage extends BaseStage {
     }).setOrigin(0.5);
 
     // Hint text
-    this.hintText = this.add.text(GAME_WIDTH / 2, 80, 'Drag items from the box into the room \u2022 R to rotate while dragging', {
+    this.hintText = this.add.text(GAME_WIDTH / 2, 80, 'Click the box to unpack \u2022 Drag items to place \u2022 R to rotate', {
       fontFamily: 'Arial',
       fontSize: '12px',
       color: '#666666',
     }).setOrigin(0.5);
 
-    // Fill the box with items
-    this.boxItems = [];
-    this.populateBox();
+    // Items remaining counter on the box
+    this.boxCountText = this.add.text(BOX_CENTER_X, BOX_Y + BOX_H - 20, '', {
+      fontFamily: 'Arial',
+      fontSize: '11px',
+      color: '#5c3a1e',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(3);
+    this.updateBoxCount();
+
+    // Drop preview graphics
+    this.dropPreviewGraphics = this.add.graphics().setDepth(5);
+    this.gridGraphics = this.add.graphics();
+    this.drawGrid();
 
     // Rotate key
     this.rKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
@@ -137,11 +155,6 @@ export class UnpackingStage extends BaseStage {
       fontSize: '16px',
       color: '#ffd700',
     }).setOrigin(0.5);
-
-    // Draw grid
-    this.gridGraphics = this.add.graphics();
-    this.dropPreviewGraphics = this.add.graphics().setDepth(5);
-    this.drawGrid();
   }
 
   drawGrid() {
@@ -208,90 +221,143 @@ export class UnpackingStage extends BaseStage {
     boxGraphics.strokePath();
 
     // Box label
-    this.add.text(BOX_X + BOX_W / 2, BOX_Y + 20, '\uD83D\uDCE6 STUFF', {
+    this.add.text(BOX_CENTER_X, BOX_Y + 20, '\uD83D\uDCE6 STUFF', {
       fontFamily: 'Arial',
       fontSize: '12px',
       color: '#5c3a1e',
       fontStyle: 'bold',
     }).setOrigin(0.5);
+
+    // Clickable "open" prompt in the center of the box
+    this.boxPrompt = this.add.text(BOX_CENTER_X, BOX_CENTER_Y - 10, '?', {
+      fontSize: '64px',
+    }).setOrigin(0.5).setDepth(3);
+
+    this.boxPromptLabel = this.add.text(BOX_CENTER_X, BOX_CENTER_Y + 45, 'Click to unpack!', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '14px',
+      color: '#ddd',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(3);
+
+    // Pulsing animation on the prompt
+    this.tweens.add({
+      targets: this.boxPrompt,
+      scale: 1.15,
+      duration: 600,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // Make the box area clickable
+    this.boxHitArea = this.add.rectangle(BOX_CENTER_X, BOX_CENTER_Y, BOX_W, BOX_H, 0x000000, 0)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(2);
+
+    this.boxHitArea.on('pointerdown', () => this.popNextItem());
   }
 
-  populateBox() {
-    // Arrange items inside the box as draggable icons
-    const shuffled = Phaser.Utils.Array.Shuffle([...ITEMS]);
-    const cols = 3;
-    const spacingX = 70;
-    const spacingY = 80;
-    const startX = BOX_X + 45;
-    const startY = BOX_Y + 55;
+  updateBoxCount() {
+    const remaining = this.itemQueue.length;
+    if (remaining > 0) {
+      this.boxCountText.setText(`${remaining} item${remaining !== 1 ? 's' : ''} left`);
+    } else {
+      this.boxCountText.setText('Empty!');
+    }
+  }
 
-    shuffled.forEach((item, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = startX + col * spacingX;
-      const y = startY + row * spacingY;
+  popNextItem() {
+    // Don't pop if currently dragging or an item is already out waiting
+    if (this.isDragging || this.currentBoxItem) return;
+    if (this.itemQueue.length === 0) return;
 
-      // Item icon (emoji)
-      const icon = this.add.text(x, y, item.icon, {
-        fontSize: '32px',
-      }).setOrigin(0.5).setInteractive({ useHandCursor: true, draggable: true }).setDepth(6);
+    const item = this.itemQueue.shift();
+    this.currentBoxItem = item;
+    this.updateBoxCount();
 
-      // Item label below icon
-      const label = this.add.text(x, y + 22, item.label, {
-        fontFamily: 'Arial',
-        fontSize: '9px',
-        color: '#ddd',
-        align: 'center',
-      }).setOrigin(0.5);
+    // Hide the prompt if queue is now empty
+    if (this.itemQueue.length === 0) {
+      this.boxPrompt.setText('\uD83D\uDCE6');
+      this.boxPromptLabel.setText('');
+    }
 
-      // Hover effect
-      icon.on('pointerover', () => {
-        icon.setScale(1.2);
-      });
-      icon.on('pointerout', () => {
-        if (!this.isDragging || this.dragItem !== item) {
-          icon.setScale(1.0);
+    this.sfx.click();
+
+    // Create the item icon popping out of the box
+    const icon = this.add.text(BOX_CENTER_X, BOX_CENTER_Y, item.icon, {
+      fontSize: '48px',
+    }).setOrigin(0.5).setDepth(6);
+
+    const label = this.add.text(BOX_CENTER_X, BOX_CENTER_Y + 40, item.label, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '13px',
+      color: '#fff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(6);
+
+    // Pop-out animation
+    icon.setScale(0);
+    label.setAlpha(0);
+    this.tweens.add({
+      targets: icon,
+      scale: 1,
+      duration: 350,
+      ease: 'Back.easeOut',
+    });
+    this.tweens.add({
+      targets: label,
+      alpha: 1,
+      duration: 300,
+      delay: 150,
+    });
+
+    // Make it draggable
+    icon.setInteractive({ useHandCursor: true, draggable: true });
+
+    icon.on('dragstart', () => {
+      this.dragSource = 'box';
+      this.startDrag(item, icon, label);
+    });
+
+    icon.on('drag', (_pointer, dragX, dragY) => {
+      icon.setPosition(dragX, dragY);
+      this.updateDropPreview(this.input.activePointer);
+    });
+
+    icon.on('dragend', () => {
+      this.endDragFromBox(item, icon, label);
+    });
+
+    // Nick's comment
+    const comment = NICK_COMMENTS[item.id];
+    if (comment) {
+      this.commentaryText.setText(comment);
+      this.time.delayedCall(3500, () => {
+        if (this.commentaryText && this.commentaryText.text === comment) {
+          this.commentaryText.setText('');
         }
       });
-
-      // Drag start
-      icon.on('dragstart', () => {
-        this.startDrag(item, icon, label);
-      });
-
-      // During drag
-      icon.on('drag', (_pointer, dragX, dragY) => {
-        icon.setPosition(dragX, dragY);
-        this.updateDropPreview(this.input.activePointer);
-      });
-
-      // Drag end
-      icon.on('dragend', () => {
-        this.endDrag(icon, label);
-      });
-
-      this.boxItems.push({ item, icon, label });
-    });
+    }
   }
+
+  // ─── Drag from box ──────────────────────────────────────
 
   startDrag(item, icon, label) {
     this.isDragging = true;
     this.dragItem = item;
     this.dragIcon = icon;
-    this.dragLabel = label;
     this.dragRotation = 0;
 
     icon.setDepth(20);
     icon.setScale(1.3);
     icon.setAlpha(0.9);
-    label.setVisible(false);
+    if (label) label.setVisible(false);
 
-    // Build ghost shape sprites that follow cursor
     this.rebuildDragSprite();
   }
 
   rebuildDragSprite() {
-    // Clear old drag shape visuals
     if (this.dragShapeCells) {
       this.dragShapeCells.forEach(c => c.destroy());
     }
@@ -301,7 +367,7 @@ export class UnpackingStage extends BaseStage {
 
     const shape = this.getRotatedShape(this.dragItem.shape, this.dragRotation);
 
-    shape.forEach(([c, r]) => {
+    shape.forEach(() => {
       const cell = this.add.rectangle(0, 0, CELL_SIZE - 4, CELL_SIZE - 4, this.dragItem.color, 0.5)
         .setStrokeStyle(2, 0xffffff, 0.5)
         .setDepth(19);
@@ -362,61 +428,40 @@ export class UnpackingStage extends BaseStage {
     }
   }
 
-  endDrag(icon, label) {
+  endDragFromBox(item, icon, label) {
     this.dropPreviewGraphics.clear();
-
-    // Clean up drag shape cells
     if (this.dragShapeCells) {
       this.dragShapeCells.forEach(c => c.destroy());
       this.dragShapeCells = [];
     }
 
-    if (!this.dragItem) {
-      this.isDragging = false;
-      return;
-    }
-
     const pointer = this.input.activePointer;
-    const shape = this.getRotatedShape(this.dragItem.shape, this.dragRotation);
+    const shape = this.getRotatedShape(item.shape, this.dragRotation);
     const col = Math.floor((pointer.x - GRID_X) / CELL_SIZE);
     const row = Math.floor((pointer.y - GRID_Y) / CELL_SIZE);
 
-    // Try to place on grid
     if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS &&
         this.canPlaceAt(col, row, shape)) {
-      this.placeItem(this.dragItem, col, row, shape);
-
-      // Remove from box
+      // Successfully placed
       icon.destroy();
-      label.destroy();
-      this.boxItems = this.boxItems.filter(bi => bi.item.id !== this.dragItem.id);
+      if (label) label.destroy();
+      this.placeItem(item, col, row, shape);
+      this.currentBoxItem = null;
     } else {
-      // Return to box — find original position
-      const boxItem = this.boxItems.find(bi => bi.item.id === this.dragItem.id);
-      if (boxItem) {
-        const idx = this.boxItems.indexOf(boxItem);
-        const cols = 3;
-        const origCol = idx % cols;
-        const origRow = Math.floor(idx / cols);
-        const origX = BOX_X + 45 + origCol * 70;
-        const origY = BOX_Y + 55 + origRow * 80;
-
-        this.tweens.add({
-          targets: icon,
-          x: origX,
-          y: origY,
-          scale: 1,
-          duration: 200,
-          ease: 'Back.easeOut',
-        });
-        label.setVisible(true);
-      }
-
+      // Snap back to box center
+      this.tweens.add({
+        targets: icon,
+        x: BOX_CENTER_X,
+        y: BOX_CENTER_Y,
+        scale: 1,
+        duration: 200,
+        ease: 'Back.easeOut',
+      });
       icon.setAlpha(1);
       icon.setDepth(6);
+      if (label) label.setVisible(true);
 
       if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
-        // Was over grid but couldn't place — shake feedback
         this.cameras.main.shake(80, 0.004);
       }
     }
@@ -424,22 +469,148 @@ export class UnpackingStage extends BaseStage {
     this.isDragging = false;
     this.dragItem = null;
     this.dragIcon = null;
-    this.dragLabel = null;
+    this.dragSource = null;
   }
 
+  // ─── Drag from room (rearrange) ─────────────────────────
+
+  startRoomDrag(spriteRecord) {
+    const { item, col, row, shape, sprite } = spriteRecord;
+
+    // Clear this item from the grid so the space is free
+    shape.forEach(([c, r]) => {
+      this.grid[row + r][col + c] = null;
+    });
+    this.drawGrid();
+
+    // Hide the placed icon — we'll use the drag icon instead
+    sprite.setVisible(false);
+
+    this.dragSource = 'room';
+    this.dragRoomData = spriteRecord;
+    this.dragItem = item;
+    this.dragRotation = 0;
+    this.isDragging = true;
+
+    // Create a temporary drag icon
+    const dragIcon = this.add.text(sprite.x, sprite.y, item.icon, {
+      fontSize: '48px',
+    }).setOrigin(0.5).setDepth(20).setScale(1.3).setAlpha(0.9);
+
+    dragIcon.setInteractive({ useHandCursor: true, draggable: true });
+    this.dragIcon = dragIcon;
+
+    // Immediately start Phaser drag
+    this.input.setDraggable(dragIcon);
+
+    dragIcon.on('drag', (_pointer, dragX, dragY) => {
+      dragIcon.setPosition(dragX, dragY);
+      this.updateDropPreview(this.input.activePointer);
+    });
+
+    dragIcon.on('dragend', () => {
+      this.endDragFromRoom(dragIcon);
+    });
+
+    this.rebuildDragSprite();
+
+    // Kick off the drag by simulating it on the pointer
+    this.input.emit('dragstart', this.input.activePointer, dragIcon);
+  }
+
+  endDragFromRoom(dragIcon) {
+    this.dropPreviewGraphics.clear();
+    if (this.dragShapeCells) {
+      this.dragShapeCells.forEach(c => c.destroy());
+      this.dragShapeCells = [];
+    }
+
+    const spriteRecord = this.dragRoomData;
+    const item = spriteRecord.item;
+
+    const pointer = this.input.activePointer;
+    const shape = this.getRotatedShape(item.shape, this.dragRotation);
+    const col = Math.floor((pointer.x - GRID_X) / CELL_SIZE);
+    const row = Math.floor((pointer.y - GRID_Y) / CELL_SIZE);
+
+    if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS &&
+        this.canPlaceAt(col, row, shape)) {
+      // Place at new location
+      dragIcon.destroy();
+      spriteRecord.sprite.destroy();
+      this.placedItemSprites = this.placedItemSprites.filter(p => p !== spriteRecord);
+      // Don't increment placedCount — it's a move, not a new placement
+      this.placeItemSilent(item, col, row, shape);
+    } else {
+      // Return to original position
+      const origShape = spriteRecord.shape;
+      origShape.forEach(([c, r]) => {
+        this.grid[spriteRecord.row + r][spriteRecord.col + c] = {
+          id: item.id,
+          color: item.color,
+        };
+      });
+      this.drawGrid();
+      spriteRecord.sprite.setVisible(true);
+      dragIcon.destroy();
+    }
+
+    this.isDragging = false;
+    this.dragItem = null;
+    this.dragIcon = null;
+    this.dragSource = null;
+    this.dragRoomData = null;
+  }
+
+  // ─── Placement ──────────────────────────────────────────
+
   placeItem(item, col, row, shape) {
-    // Write to grid
+    this.writeToGrid(item, col, row, shape);
+    this.sfx.thud();
+
+    const placedIcon = this.createPlacedIcon(item, col, row, shape, true);
+
+    // Dust particles
+    this.emitDust(placedIcon.x, placedIcon.y, item.color);
+
+    this.drawGrid();
+
+    // Update progress
+    this.placedCount++;
+    this.progressText.setText(`${this.placedCount} / ${this.totalItems} items placed`);
+
+    if (shape.length >= 4) {
+      this.time.delayedCall(150, () => this.sfx.cheer());
+    }
+
+    // Update hint after first item placed
+    if (this.placedCount === 1) {
+      this.hintText.setText('Drag placed items to rearrange \u2022 Click box for next item \u2022 R to rotate');
+    }
+
+    if (this.placedCount >= this.totalItems) {
+      this.time.delayedCall(1000, () => this.finishGame());
+    }
+  }
+
+  /** Place without sound/particles/count — used for rearranging */
+  placeItemSilent(item, col, row, shape) {
+    this.writeToGrid(item, col, row, shape);
+    this.sfx.thud();
+    this.createPlacedIcon(item, col, row, shape, true);
+    this.drawGrid();
+  }
+
+  writeToGrid(item, col, row, shape) {
     shape.forEach(([c, r]) => {
       this.grid[row + r][col + c] = {
         id: item.id,
         color: item.color,
       };
     });
+  }
 
-    // Play satisfying thud
-    this.sfx.thud();
-
-    // Place icon on the grid — scaled to fill the item's footprint
+  createPlacedIcon(item, col, row, shape, animate) {
     const minC = Math.min(...shape.map(([c]) => c));
     const maxC = Math.max(...shape.map(([c]) => c));
     const minR = Math.min(...shape.map(([, r]) => r));
@@ -449,7 +620,6 @@ export class UnpackingStage extends BaseStage {
     const centerX = GRID_X + (col + (minC + maxC + 1) / 2) * CELL_SIZE;
     const centerY = GRID_Y + (row + (minR + maxR + 1) / 2) * CELL_SIZE;
 
-    // Scale emoji to fill the bounding box of the shape
     const baseFontSize = 28;
     const spanMax = Math.max(spanW, spanH);
     const fillScale = (spanMax * CELL_SIZE * 0.75) / baseFontSize;
@@ -457,28 +627,36 @@ export class UnpackingStage extends BaseStage {
     const placedIcon = this.add.text(centerX, centerY, item.icon, {
       fontSize: `${baseFontSize}px`,
     }).setOrigin(0.5).setDepth(4);
-    this.placedItemSprites.push({ sprite: placedIcon, item, col, row, shape });
 
-    // Make placed icon interactive — click to return to box
+    const record = { sprite: placedIcon, item, col, row, shape, fillScale };
+    this.placedItemSprites.push(record);
+
+    // Make it draggable for rearranging
     placedIcon.setInteractive({ useHandCursor: true });
     placedIcon.on('pointerdown', () => {
       if (this.isDragging || this.isComplete) return;
-      this.returnItemToBox(item, placedIcon);
+      this.startRoomDrag(record);
     });
 
-    // Drop-in animation: scale bounce to fill size
-    placedIcon.setScale(0.3);
-    this.tweens.add({
-      targets: placedIcon,
-      scale: fillScale,
-      duration: 300,
-      ease: 'Back.easeOut',
-    });
+    if (animate) {
+      placedIcon.setScale(0.3);
+      this.tweens.add({
+        targets: placedIcon,
+        scale: fillScale,
+        duration: 300,
+        ease: 'Back.easeOut',
+      });
+    } else {
+      placedIcon.setScale(fillScale);
+    }
 
-    // Dust particles on placement
+    return placedIcon;
+  }
+
+  emitDust(centerX, centerY, itemColor) {
     for (let i = 0; i < 8; i++) {
       const dust = this.add.circle(centerX, centerY, Phaser.Math.Between(2, 5),
-        Phaser.Math.RND.pick([0xc4943a, 0x8b6914, 0xdaa520, item.color]));
+        Phaser.Math.RND.pick([0xc4943a, 0x8b6914, 0xdaa520, itemColor]));
       const angle = (Math.PI * 2 / 8) * i + Math.random() * 0.5;
       const dist = Phaser.Math.Between(20, 50);
       this.tweens.add({
@@ -493,96 +671,9 @@ export class UnpackingStage extends BaseStage {
         onComplete: () => dust.destroy(),
       });
     }
-
-    // Redraw grid
-    this.drawGrid();
-
-    // Nick commentary
-    const comment = NICK_COMMENTS[item.id];
-    if (comment) {
-      this.commentaryText.setText(comment);
-      this.time.delayedCall(3500, () => {
-        if (this.commentaryText && this.commentaryText.text === comment) {
-          this.commentaryText.setText('');
-        }
-      });
-    }
-
-    // Update progress
-    this.placedCount++;
-    this.progressText.setText(`${this.placedCount} / ${this.totalItems} items placed`);
-
-    // Check for bullseye placement sound
-    if (shape.length >= 4) {
-      this.time.delayedCall(150, () => this.sfx.cheer());
-    }
-
-    // Check completion
-    if (this.placedCount >= this.totalItems) {
-      this.time.delayedCall(1000, () => this.finishGame());
-    }
   }
 
-  returnItemToBox(item, placedIcon) {
-    // Clear item from the grid
-    for (let r = 0; r < GRID_ROWS; r++) {
-      for (let c = 0; c < GRID_COLS; c++) {
-        if (this.grid[r][c] && this.grid[r][c].id === item.id) {
-          this.grid[r][c] = null;
-        }
-      }
-    }
-
-    // Remove placed sprite
-    placedIcon.destroy();
-    this.placedItemSprites = this.placedItemSprites.filter(p => p.item.id !== item.id);
-
-    // Redraw grid
-    this.drawGrid();
-
-    // Update count
-    this.placedCount--;
-    this.progressText.setText(`${this.placedCount} / ${this.totalItems} items placed`);
-
-    // Add item back into the box
-    const cols = 3;
-    const idx = this.boxItems.length;
-    const col = idx % cols;
-    const row = Math.floor(idx / cols);
-    const x = BOX_X + 45 + col * 70;
-    const y = BOX_Y + 55 + row * 80;
-
-    const icon = this.add.text(x, y, item.icon, {
-      fontSize: '32px',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true, draggable: true }).setDepth(6);
-
-    const label = this.add.text(x, y + 22, item.label, {
-      fontFamily: 'Arial',
-      fontSize: '9px',
-      color: '#ddd',
-      align: 'center',
-    }).setOrigin(0.5);
-
-    // Pop-in animation
-    icon.setScale(0);
-    this.tweens.add({ targets: icon, scale: 1, duration: 250, ease: 'Back.easeOut' });
-
-    // Hover effect
-    icon.on('pointerover', () => icon.setScale(1.2));
-    icon.on('pointerout', () => {
-      if (!this.isDragging || this.dragItem !== item) icon.setScale(1.0);
-    });
-
-    icon.on('dragstart', () => this.startDrag(item, icon, label));
-    icon.on('drag', (_pointer, dragX, dragY) => {
-      icon.setPosition(dragX, dragY);
-      this.updateDropPreview(this.input.activePointer);
-    });
-    icon.on('dragend', () => this.endDrag(icon, label));
-
-    this.boxItems.push({ item, icon, label });
-    this.sfx.click();
-  }
+  // ─── Helpers ────────────────────────────────────────────
 
   getRotatedShape(shape, rotation) {
     let rotated = shape.map(([c, r]) => [c, r]);
@@ -603,6 +694,8 @@ export class UnpackingStage extends BaseStage {
     }
     return true;
   }
+
+  // ─── End game ───────────────────────────────────────────
 
   finishGame() {
     this.isComplete = true;
