@@ -39,11 +39,11 @@ const DIFFICULTY = {
   hard: {
     label: 'Hard',
     description: 'Nick is locked in',
-    accuracyRange: 10,
-    hitChance: 0.93,
-    powerMin: 92,
+    accuracyRange: 5,
+    hitChance: 0.97,
+    powerMin: 96,
     powerMax: 100,
-    missChance: 0.02,
+    missChance: 0.01,
   },
 };
 
