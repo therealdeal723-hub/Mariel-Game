@@ -439,24 +439,38 @@ export class UnpackingStage extends BaseStage {
     // Play satisfying thud
     this.sfx.thud();
 
-    // Place icon on the grid at the center of the shape
+    // Place icon on the grid — scaled to fill the item's footprint
     const minC = Math.min(...shape.map(([c]) => c));
     const maxC = Math.max(...shape.map(([c]) => c));
     const minR = Math.min(...shape.map(([, r]) => r));
     const maxR = Math.max(...shape.map(([, r]) => r));
+    const spanW = maxC - minC + 1;
+    const spanH = maxR - minR + 1;
     const centerX = GRID_X + (col + (minC + maxC + 1) / 2) * CELL_SIZE;
     const centerY = GRID_Y + (row + (minR + maxR + 1) / 2) * CELL_SIZE;
 
-    const placedIcon = this.add.text(centerX, centerY, item.icon, {
-      fontSize: '28px',
-    }).setOrigin(0.5).setDepth(4);
-    this.placedItemSprites.push(placedIcon);
+    // Scale emoji to fill the bounding box of the shape
+    const baseFontSize = 28;
+    const spanMax = Math.max(spanW, spanH);
+    const fillScale = (spanMax * CELL_SIZE * 0.75) / baseFontSize;
 
-    // Drop-in animation: scale bounce
+    const placedIcon = this.add.text(centerX, centerY, item.icon, {
+      fontSize: `${baseFontSize}px`,
+    }).setOrigin(0.5).setDepth(4);
+    this.placedItemSprites.push({ sprite: placedIcon, item, col, row, shape });
+
+    // Make placed icon interactive — click to return to box
+    placedIcon.setInteractive({ useHandCursor: true });
+    placedIcon.on('pointerdown', () => {
+      if (this.isDragging || this.isComplete) return;
+      this.returnItemToBox(item, placedIcon);
+    });
+
+    // Drop-in animation: scale bounce to fill size
     placedIcon.setScale(0.3);
     this.tweens.add({
       targets: placedIcon,
-      scale: 1,
+      scale: fillScale,
       duration: 300,
       ease: 'Back.easeOut',
     });
@@ -507,6 +521,67 @@ export class UnpackingStage extends BaseStage {
     if (this.placedCount >= this.totalItems) {
       this.time.delayedCall(1000, () => this.finishGame());
     }
+  }
+
+  returnItemToBox(item, placedIcon) {
+    // Clear item from the grid
+    for (let r = 0; r < GRID_ROWS; r++) {
+      for (let c = 0; c < GRID_COLS; c++) {
+        if (this.grid[r][c] && this.grid[r][c].id === item.id) {
+          this.grid[r][c] = null;
+        }
+      }
+    }
+
+    // Remove placed sprite
+    placedIcon.destroy();
+    this.placedItemSprites = this.placedItemSprites.filter(p => p.item.id !== item.id);
+
+    // Redraw grid
+    this.drawGrid();
+
+    // Update count
+    this.placedCount--;
+    this.progressText.setText(`${this.placedCount} / ${this.totalItems} items placed`);
+
+    // Add item back into the box
+    const cols = 3;
+    const idx = this.boxItems.length;
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+    const x = BOX_X + 45 + col * 70;
+    const y = BOX_Y + 55 + row * 80;
+
+    const icon = this.add.text(x, y, item.icon, {
+      fontSize: '32px',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true, draggable: true }).setDepth(6);
+
+    const label = this.add.text(x, y + 22, item.label, {
+      fontFamily: 'Arial',
+      fontSize: '9px',
+      color: '#ddd',
+      align: 'center',
+    }).setOrigin(0.5);
+
+    // Pop-in animation
+    icon.setScale(0);
+    this.tweens.add({ targets: icon, scale: 1, duration: 250, ease: 'Back.easeOut' });
+
+    // Hover effect
+    icon.on('pointerover', () => icon.setScale(1.2));
+    icon.on('pointerout', () => {
+      if (!this.isDragging || this.dragItem !== item) icon.setScale(1.0);
+    });
+
+    icon.on('dragstart', () => this.startDrag(item, icon, label));
+    icon.on('drag', (_pointer, dragX, dragY) => {
+      icon.setPosition(dragX, dragY);
+      this.updateDropPreview(this.input.activePointer);
+    });
+    icon.on('dragend', () => this.endDrag(icon, label));
+
+    this.boxItems.push({ item, icon, label });
+    this.sfx.click();
   }
 
   getRotatedShape(shape, rotation) {
