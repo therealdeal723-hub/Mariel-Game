@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 120">
+  <!-- Nick - based on photo: dark-framed glasses, short brown hair, stubble, navy anchor shirt -->
+
+  <!-- Body / navy anchor-pattern shirt -->
+  <path d="M20,65 Q18,58 20,52 Q26,46 40,44 Q54,46 60,52 Q62,58 60,65 L60,110 Q60,115 55,115 L25,115 Q20,115 20,110Z" fill="#1a2a4a"/>
+  <!-- Collar -->
+  <path d="M32,46 Q36,52 40,54 Q44,52 48,46" stroke="#152040" stroke-width="1.5" fill="none"/>
+  <!-- Button placket -->
+  <line x1="40" y1="54" x2="40" y2="100" stroke="#152040" stroke-width="1"/>
+  <circle cx="40" cy="60" r="1" fill="#c0c0c0"/>
+  <circle cx="40" cy="70" r="1" fill="#c0c0c0"/>
+  <circle cx="40" cy="80" r="1" fill="#c0c0c0"/>
+  <!-- Anchor pattern on shirt -->
+  <g fill="#2a3a5a" opacity="0.4">
+    <text x="25" y="65" font-size="4" font-family="serif">⚓</text>
+    <text x="48" y="62" font-size="4" font-family="serif">⚓</text>
+    <text x="30" y="78" font-size="4" font-family="serif">⚓</text>
+    <text x="46" y="75" font-size="4" font-family="serif">⚓</text>
+    <text x="28" y="92" font-size="4" font-family="serif">⚓</text>
+    <text x="50" y="88" font-size="4" font-family="serif">⚓</text>
+  </g>
+
+  <!-- Neck -->
+  <rect x="35" y="36" width="10" height="12" rx="4" fill="#e0b890"/>
+
+  <!-- Head -->
+  <ellipse cx="40" cy="24" rx="19" ry="20" fill="#e0b890"/>
+
+  <!-- Short brown hair -->
+  <path d="M21,20 Q22,6 40,3 Q58,6 59,20 Q58,14 52,10 Q44,6 40,6 Q36,6 28,10 Q22,14 21,20Z" fill="#5a3a2a"/>
+  <!-- Thinning on top (show scalp through) -->
+  <path d="M32,6 Q38,3 48,6" stroke="#d8b080" stroke-width="0.5" fill="none" opacity="0.3"/>
+  <!-- Short sides -->
+  <path d="M21,20 Q19,22 19,26 Q20,24 21,20Z" fill="#5a3a2a"/>
+  <path d="M59,20 Q61,22 61,26 Q60,24 59,20Z" fill="#5a3a2a"/>
+
+  <!-- Eyebrows -->
+  <path d="M29,18 Q33,16 37,18" stroke="#4a3020" stroke-width="1.5" fill="none"/>
+  <path d="M43,18 Q47,16 51,18" stroke="#4a3020" stroke-width="1.5" fill="none"/>
+
+  <!-- Eyes -->
+  <ellipse cx="33" cy="23" rx="3.5" ry="3" fill="white"/>
+  <ellipse cx="47" cy="23" rx="3.5" ry="3" fill="white"/>
+  <circle cx="33" cy="23" r="2.2" fill="#4a6a3a"/>
+  <circle cx="47" cy="23" r="2.2" fill="#4a6a3a"/>
+  <circle cx="33.7" cy="22.5" r="0.8" fill="white"/>
+  <circle cx="47.7" cy="22.5" r="0.8" fill="white"/>
+
+  <!-- Glasses (dark frames) -->
+  <rect x="27" y="19" width="13" height="10" rx="3" fill="none" stroke="#2a2a2a" stroke-width="2"/>
+  <rect x="42" y="19" width="13" height="10" rx="3" fill="none" stroke="#2a2a2a" stroke-width="2"/>
+  <line x1="40" y1="23" x2="42" y2="23" stroke="#2a2a2a" stroke-width="1.5"/>
+  <!-- Temple arms -->
+  <line x1="27" y1="22" x2="21" y2="21" stroke="#2a2a2a" stroke-width="1.5"/>
+  <line x1="55" y1="22" x2="59" y2="21" stroke="#2a2a2a" stroke-width="1.5"/>
+
+  <!-- Nose -->
+  <path d="M40,25 Q39,30 38,32" stroke="#d0a880" stroke-width="1.2" fill="none"/>
+
+  <!-- Stubble / facial hair -->
+  <g fill="#8a7060" opacity="0.3">
+    <circle cx="32" cy="35" r="0.5"/>
+    <circle cx="35" cy="36" r="0.5"/>
+    <circle cx="38" cy="36" r="0.5"/>
+    <circle cx="42" cy="36" r="0.5"/>
+    <circle cx="45" cy="36" r="0.5"/>
+    <circle cx="48" cy="35" r="0.5"/>
+    <circle cx="34" cy="38" r="0.5"/>
+    <circle cx="37" cy="39" r="0.5"/>
+    <circle cx="40" cy="39" r="0.5"/>
+    <circle cx="43" cy="39" r="0.5"/>
+    <circle cx="46" cy="38" r="0.5"/>
+    <circle cx="30" cy="33" r="0.4"/>
+    <circle cx="50" cy="33" r="0.4"/>
+    <circle cx="36" cy="40" r="0.4"/>
+    <circle cx="40" cy="41" r="0.4"/>
+    <circle cx="44" cy="40" r="0.4"/>
+  </g>
+
+  <!-- Slight smile -->
+  <path d="M35,35 Q40,38 45,35" stroke="#b08070" stroke-width="1.2" fill="none"/>
+</svg>

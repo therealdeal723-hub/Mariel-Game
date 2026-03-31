@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Measuring Cups - set of nested cups -->
+  <g transform="translate(64,64)">
+    <!-- 1 cup (largest, back) -->
+    <path d="M-28,5 Q-30,22 -22,32 Q0,38 22,32 Q30,22 28,5" fill="#d0d0d0"/>
+    <ellipse cx="0" cy="5" rx="28" ry="7" fill="#e0e0e0"/>
+    <path d="M28,10 Q36,10 36,16 Q36,22 28,22" stroke="#c0c0c0" stroke-width="2.5" fill="none"/>
+    <!-- 1/2 cup -->
+    <path d="M-20,-5 Q-22,8 -16,16 Q0,22 16,16 Q22,8 20,-5" fill="#e8a858"/>
+    <ellipse cx="0" cy="-5" rx="20" ry="5.5" fill="#f0b868"/>
+    <path d="M20,-2 Q26,-2 26,3 Q26,8 20,8" stroke="#d89840" stroke-width="2" fill="none"/>
+    <!-- 1/3 cup -->
+    <path d="M-14,-14 Q-16,-4 -10,-0 Q0,5 10,0 Q16,-4 14,-14" fill="#70b870"/>
+    <ellipse cx="0" cy="-14" rx="14" ry="4" fill="#80c880"/>
+    <path d="M14,-12 Q18,-12 18,-8 Q18,-4 14,-4" stroke="#60a860" stroke-width="1.8" fill="none"/>
+    <!-- 1/4 cup (smallest, front) -->
+    <path d="M-9,-22 Q-10,-14 -7,-11 Q0,-8 7,-11 Q10,-14 9,-22" fill="#c06080"/>
+    <ellipse cx="0" cy="-22" rx="9" ry="3" fill="#d07090"/>
+    <path d="M9,-20 Q12,-20 12,-17 Q12,-14 9,-14" stroke="#b05070" stroke-width="1.5" fill="none"/>
+    <!-- Size labels -->
+    <text x="-8" y="22" font-family="Arial" font-size="6" fill="#999">1c</text>
+    <text x="-6" y="8" font-family="Arial" font-size="5" fill="#8a7030">1/2</text>
+    <text x="-5" y="-5" font-family="Arial" font-size="4.5" fill="#4a8a4a">1/3</text>
+    <text x="-4" y="-15" font-family="Arial" font-size="4" fill="#904060">1/4</text>
+  </g>
+</svg>

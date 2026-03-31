@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Cake Stand - elegant pedestal -->
+  <g transform="translate(64,68)">
+    <!-- Top plate -->
+    <ellipse cx="0" cy="-15" rx="42" ry="8" fill="#f0ebe5"/>
+    <path d="M-42,-15 Q-44,-12 -42,-10 Q0,2 42,-10 Q44,-12 42,-15" fill="#e8e0d8"/>
+    <!-- Plate rim -->
+    <ellipse cx="0" cy="-15" rx="42" ry="8" fill="none" stroke="#d8d0c8" stroke-width="1.5"/>
+    <ellipse cx="0" cy="-15" rx="38" ry="6.5" fill="none" stroke="#e0d8d0" stroke-width="0.5"/>
+    <!-- Pedestal stem -->
+    <path d="M-6,-8 L-4,18 L4,18 L6,-8Z" fill="#e0d8d0"/>
+    <line x1="0" y1="-8" x2="0" y2="18" stroke="#f0ebe5" stroke-width="2" opacity="0.4"/>
+    <!-- Decorative bulge in stem -->
+    <ellipse cx="0" cy="5" rx="6" ry="4" fill="#e8e0d8"/>
+    <!-- Base -->
+    <ellipse cx="0" cy="22" rx="24" ry="5" fill="#e8e0d8"/>
+    <path d="M-24,22 Q-26,25 -24,28 Q0,36 24,28 Q26,25 24,22" fill="#e0d8d0"/>
+    <ellipse cx="0" cy="28" rx="24" ry="5" fill="#e0d8d0" stroke="#d0c8c0" stroke-width="0.8"/>
+    <!-- Glass dome (optional display) -->
+    <path d="M-32,-15 Q-35,-40 0,-48 Q35,-40 32,-15" fill="white" opacity="0.08" stroke="#d0d8e0" stroke-width="0.8"/>
+    <!-- Cake on stand -->
+    <rect x="-22" y="-30" width="44" height="16" rx="3" fill="#f5d0a0"/>
+    <rect x="-24" y="-30" width="48" height="3" rx="1" fill="#f0c080"/>
+    <!-- Frosting drips -->
+    <path d="M-20,-27 Q-18,-24 -20,-22" stroke="#f8e0c0" stroke-width="2" fill="none"/>
+    <path d="M-5,-27 Q-3,-23 -5,-20" stroke="#f8e0c0" stroke-width="2" fill="none"/>
+    <path d="M15,-27 Q17,-22 15,-19" stroke="#f8e0c0" stroke-width="2" fill="none"/>
+    <!-- Cherry on top -->
+    <circle cx="0" cy="-33" r="4" fill="#cc3030"/>
+    <path d="M0,-37 Q2,-40 4,-38" stroke="#2a6a2a" stroke-width="1" fill="none"/>
+  </g>
+</svg>

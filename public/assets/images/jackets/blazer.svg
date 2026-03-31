@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Blazer - structured tailored jacket -->
+  <g transform="translate(64,64)">
+    <!-- Body -->
+    <path d="M-30,38 L-30,-12 L-18,-22 L-5,-28 L0,-15 L5,-28 L18,-22 L30,-12 L30,38Z" fill="#2a2848"/>
+    <!-- Lapels (notch style) -->
+    <path d="M-5,-28 L0,-15 L-18,-2 L-20,-8 L-18,-22Z" fill="#34305a"/>
+    <path d="M5,-28 L0,-15 L18,-2 L20,-8 L18,-22Z" fill="#34305a"/>
+    <!-- Notch cuts -->
+    <line x1="-18" y1="-22" x2="-22" y2="-18" stroke="#2a2848" stroke-width="2"/>
+    <line x1="18" y1="-22" x2="22" y2="-18" stroke="#2a2848" stroke-width="2"/>
+    <!-- Sleeves -->
+    <path d="M-30,-12 L-40,-2 L-40,22 L-30,26 L-30,-12Z" fill="#2a2848"/>
+    <path d="M30,-12 L40,-2 L40,22 L30,26 L30,-12Z" fill="#2a2848"/>
+    <!-- Single button -->
+    <circle cx="0" cy="5" r="3" fill="#daa520"/>
+    <circle cx="0" cy="5" r="1.5" fill="#c49520"/>
+    <!-- Breast pocket (welt) -->
+    <line x1="-22" y1="-6" x2="-10" y2="-6" stroke="#34305a" stroke-width="1.5"/>
+    <!-- Flap pockets -->
+    <rect x="-26" y="15" width="16" height="3" rx="1" fill="#34305a"/>
+    <rect x="10" y="15" width="16" height="3" rx="1" fill="#34305a"/>
+    <!-- Center seam / opening -->
+    <line x1="0" y1="-15" x2="0" y2="38" stroke="#222040" stroke-width="0.8"/>
+    <!-- Sleeve button details -->
+    <g fill="#daa520" opacity="0.7">
+      <circle cx="-38" cy="18" r="1.2"/>
+      <circle cx="-38" cy="14" r="1.2"/>
+      <circle cx="38" cy="18" r="1.2"/>
+      <circle cx="38" cy="14" r="1.2"/>
+    </g>
+  </g>
+</svg>

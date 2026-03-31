@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Monstera Albo Variegata - half white, half green -->
+  <g transform="translate(64,68)">
+    <path d="M0,45 Q-2,28 0,5" stroke="#2d5a1e" stroke-width="3.5" fill="none"/>
+    <!-- Full leaf shape (green base) -->
+    <path d="M0,0 Q-15,-18 -30,-32 Q-40,-28 -42,-12 Q-38,-2 -28,2 Q-22,-5 -15,-10 Q-8,2 0,5 Q8,2 15,-10 Q22,-5 28,2 Q38,-2 42,-12 Q40,-28 30,-32 Q15,-18 0,0Z" fill="#1a8a3e"/>
+    <!-- White half (right side) - the albo split -->
+    <clipPath id="alboClip">
+      <path d="M0,0 Q-15,-18 -30,-32 Q-40,-28 -42,-12 Q-38,-2 -28,2 Q-22,-5 -15,-10 Q-8,2 0,5 Q8,2 15,-10 Q22,-5 28,2 Q38,-2 42,-12 Q40,-28 30,-32 Q15,-18 0,0Z"/>
+    </clipPath>
+    <rect x="0" y="-45" width="50" height="55" fill="#f8f4ee" clip-path="url(#alboClip)"/>
+    <!-- Soft transition zone -->
+    <path d="M0,-32 Q3,-22 -2,-12 Q2,-5 0,5" stroke="#c8ddb8" stroke-width="4" fill="none" opacity="0.5"/>
+    <!-- Fenestrations -->
+    <ellipse cx="-16" cy="-18" rx="4" ry="5" fill="#2a1f3d"/>
+    <ellipse cx="16" cy="-18" rx="4" ry="5" fill="#2a1f3d"/>
+    <!-- Midrib -->
+    <line x1="0" y1="2" x2="0" y2="-30" stroke="#15712f" stroke-width="1.5" opacity="0.5"/>
+    <!-- Veins -->
+    <line x1="0" y1="-10" x2="-20" y2="-18" stroke="#15712f" stroke-width="0.8" opacity="0.4"/>
+    <line x1="0" y1="-10" x2="20" y2="-18" stroke="#c8c0a8" stroke-width="0.8" opacity="0.4"/>
+    <!-- Terracotta pot -->
+    <path d="M-16,45 L-13,28 L13,28 L16,45Z" fill="#c4663a"/>
+    <rect x="-18" y="25" width="36" height="5" rx="2" fill="#d4764a"/>
+  </g>
+</svg>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Cashmere Wrap Scarf - soft draped look -->
+  <g transform="translate(64,64)">
+    <!-- Main wrap body -->
+    <path d="M-35,-30 Q-20,-35 0,-32 Q20,-28 35,-30 Q38,-15 35,5 Q30,25 20,35 Q10,38 -5,35 Q-20,30 -30,20 Q-38,5 -35,-30Z" fill="#e8d5c0"/>
+    <!-- Fold/drape lines -->
+    <path d="M-25,-28 Q-10,0 -15,30" stroke="#d4c0a8" stroke-width="1.5" fill="none"/>
+    <path d="M-5,-32 Q5,-5 0,35" stroke="#d4c0a8" stroke-width="1.5" fill="none"/>
+    <path d="M20,-28 Q15,0 18,32" stroke="#d4c0a8" stroke-width="1.2" fill="none"/>
+    <!-- Soft texture lines -->
+    <path d="M-30,-15 Q-20,-10 -25,5" stroke="#d4c0a8" stroke-width="0.8" fill="none" opacity="0.5"/>
+    <path d="M10,-25 Q15,-15 12,0" stroke="#d4c0a8" stroke-width="0.8" fill="none" opacity="0.5"/>
+    <!-- Fringe at bottom -->
+    <g stroke="#d4c0a8" stroke-width="1.2">
+      <line x1="-25" y1="22" x2="-28" y2="32"/>
+      <line x1="-20" y1="26" x2="-22" y2="36"/>
+      <line x1="-15" y1="29" x2="-16" y2="38"/>
+      <line x1="-10" y1="32" x2="-10" y2="40"/>
+      <line x1="-5" y1="34" x2="-4" y2="42"/>
+      <line x1="0" y1="35" x2="1" y2="43"/>
+      <line x1="5" y1="36" x2="6" y2="44"/>
+      <line x1="10" y1="37" x2="12" y2="44"/>
+      <line x1="15" y1="36" x2="17" y2="43"/>
+      <line x1="20" y1="34" x2="22" y2="40"/>
+    </g>
+    <!-- Soft highlight -->
+    <ellipse cx="-10" cy="-10" rx="18" ry="12" fill="white" opacity="0.1"/>
+  </g>
+</svg>

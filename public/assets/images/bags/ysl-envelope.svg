@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- YSL Envelope Bag - sleek envelope clutch -->
+  <g transform="translate(64,64)">
+    <!-- Chain strap -->
+    <path d="M-25,-22 Q-30,-38 0,-40 Q30,-38 25,-22" stroke="#c0c0c0" stroke-width="2" fill="none"/>
+    <!-- Main body -->
+    <rect x="-38" y="-18" width="76" height="42" rx="2" fill="#2a2a2a"/>
+    <!-- Envelope flap (chevron V shape) -->
+    <path d="M-38,-18 L0,8 L38,-18Z" fill="#333"/>
+    <!-- V-shaped quilting lines -->
+    <path d="M-38,-10 L0,12 L38,-10" stroke="#3a3a3a" stroke-width="1" fill="none"/>
+    <path d="M-38,-2 L0,16 L38,-2" stroke="#3a3a3a" stroke-width="0.8" fill="none"/>
+    <!-- YSL logo hardware -->
+    <g transform="translate(0,-2)" fill="#c0c0c0">
+      <!-- Y -->
+      <path d="M-6,-6 L-3,0 L0,-6 M-3,0 L-3,5" stroke="#c0c0c0" stroke-width="1.5" fill="none"/>
+      <!-- S -->
+      <path d="M2,-6 Q6,-6 6,-3 Q6,0 2,0 Q-1,0 -1,3 Q-1,6 2,6" stroke="#c0c0c0" stroke-width="1.3" fill="none"/>
+      <!-- L -->
+      <path d="M8,-6 L8,5 L12,5" stroke="#c0c0c0" stroke-width="1.5" fill="none"/>
+    </g>
+    <!-- Subtle edge highlight -->
+    <line x1="-36" y1="22" x2="36" y2="22" stroke="#3a3a3a" stroke-width="0.5"/>
+  </g>
+</svg>

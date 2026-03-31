@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Mini Monstera (Rhaphidophora Tetrasperma) - small pointed split leaves -->
+  <g transform="translate(64,68)">
+    <!-- Stems -->
+    <path d="M0,45 Q0,30 -3,15" stroke="#2d5a1e" stroke-width="2.5" fill="none"/>
+    <path d="M-3,15 Q-8,5 -15,-5" stroke="#2d5a1e" stroke-width="2" fill="none"/>
+    <path d="M-3,15 Q5,5 12,-5" stroke="#2d5a1e" stroke-width="2" fill="none"/>
+    <path d="M-3,20 Q-15,12 -22,5" stroke="#2d5a1e" stroke-width="1.5" fill="none"/>
+    <!-- Leaf 1 (top left) - small split -->
+    <path d="M-15,-5 Q-22,-15 -28,-28 Q-32,-22 -30,-12 Q-25,-6 -15,-5Z" fill="#2aad50"/>
+    <path d="M-15,-5 Q-10,-18 -8,-28 Q-14,-28 -20,-22 Q-18,-12 -15,-5Z" fill="#25a048"/>
+    <!-- Split gap -->
+    <path d="M-16,-18 L-18,-22 L-14,-20Z" fill="#2a1f3d"/>
+    <!-- Leaf 2 (top right) -->
+    <path d="M12,-5 Q20,-15 26,-28 Q30,-22 28,-10 Q22,-4 12,-5Z" fill="#22a848"/>
+    <path d="M12,-5 Q8,-16 6,-26 Q12,-28 18,-22 Q16,-12 12,-5Z" fill="#1e9940"/>
+    <path d="M14,-16 L16,-20 L12,-19Z" fill="#2a1f3d"/>
+    <!-- Leaf 3 (lower left, smaller) -->
+    <path d="M-22,5 Q-28,-2 -32,-12 Q-36,-8 -34,0 Q-30,4 -22,5Z" fill="#28b050"/>
+    <path d="M-22,5 Q-20,-4 -18,-12 Q-24,-10 -28,-4 Q-26,2 -22,5Z" fill="#24a548"/>
+    <!-- Leaf veins -->
+    <line x1="-15" y1="-5" x2="-20" y2="-22" stroke="#1a8a3e" stroke-width="0.8" opacity="0.5"/>
+    <line x1="12" y1="-5" x2="18" y2="-22" stroke="#1a8a3e" stroke-width="0.8" opacity="0.5"/>
+    <!-- Small pink pot -->
+    <path d="M-12,45 L-10,28 L10,28 L12,45Z" fill="#e8a0b0"/>
+    <rect x="-14" y="25" width="28" height="5" rx="2" fill="#f0b0c0"/>
+  </g>
+</svg>

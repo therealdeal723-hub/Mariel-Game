@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Mixing Bowls - stacked nesting set -->
+  <g transform="translate(64,68)">
+    <!-- Large bowl (back) -->
+    <path d="M-40,10 Q-44,25 -35,35 Q0,48 35,35 Q44,25 40,10" fill="#4a90c8"/>
+    <ellipse cx="0" cy="10" rx="40" ry="10" fill="#5aa0d8"/>
+    <!-- Medium bowl (middle) -->
+    <path d="M-30,2 Q-34,15 -26,24 Q0,35 26,24 Q34,15 30,2" fill="#e8a040"/>
+    <ellipse cx="0" cy="2" rx="30" ry="8" fill="#f0b050"/>
+    <!-- Small bowl (front) -->
+    <path d="M-20,-6 Q-24,5 -18,12 Q0,22 18,12 Q24,5 20,-6" fill="#e06060"/>
+    <ellipse cx="0" cy="-6" rx="20" ry="6" fill="#f07070"/>
+    <!-- Inner shadows -->
+    <ellipse cx="0" cy="-4" rx="14" ry="4" fill="#c85050" opacity="0.4"/>
+    <ellipse cx="0" cy="4" rx="22" ry="5" fill="#d89838" opacity="0.3"/>
+    <!-- Rim highlights -->
+    <path d="M-18,-6 Q0,-14 18,-6" stroke="white" stroke-width="0.8" fill="none" opacity="0.3"/>
+    <path d="M-28,2 Q0,-8 28,2" stroke="white" stroke-width="0.8" fill="none" opacity="0.25"/>
+    <path d="M-38,10 Q0,-2 38,10" stroke="white" stroke-width="0.8" fill="none" opacity="0.2"/>
+  </g>
+</svg>
