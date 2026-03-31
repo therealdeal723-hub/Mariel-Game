@@ -319,21 +319,26 @@ export class UnpackingStage extends BaseStage {
 
     this.sfx.click();
 
+    // Disable box click area while an item is out
+    this.boxHitArea.disableInteractive();
+
     // Create the item image popping out of the box
     const icon = this.add.image(BOX_CENTER_X, BOX_CENTER_Y, item.texture)
-      .setOrigin(0.5).setDepth(6).setDisplaySize(80, 80);
+      .setOrigin(0.5).setDepth(8).setDisplaySize(80, 80);
+
+    // Capture target scale BEFORE setting to 0 for the tween
+    const targetScaleX = icon.scaleX;
+    const targetScaleY = icon.scaleY;
 
     const label = this.add.text(BOX_CENTER_X, BOX_CENTER_Y + 50, item.label, {
       fontFamily: 'Georgia, serif',
       fontSize: '13px',
       color: '#fff',
       fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(6);
+    }).setOrigin(0.5).setDepth(8);
 
     // Pop-out animation
     icon.setScale(0);
-    const targetScaleX = icon.scaleX;
-    const targetScaleY = icon.scaleY;
     label.setAlpha(0);
     this.tweens.add({
       targets: icon,
@@ -484,8 +489,12 @@ export class UnpackingStage extends BaseStage {
       if (label) label.destroy();
       this.placeItem(item, col, row, shape);
       this.currentBoxItem = null;
+      // Re-enable box clicks for next item
+      if (this.itemQueue.length > 0) {
+        this.boxHitArea.setInteractive({ useHandCursor: true });
+      }
     } else {
-      // Snap back to box center
+      // Snap back to box center — item stays as currentBoxItem, box stays disabled
       icon.setDisplaySize(80, 80);
       const snapScaleX = icon.scaleX;
       const snapScaleY = icon.scaleY;
@@ -499,7 +508,7 @@ export class UnpackingStage extends BaseStage {
         ease: 'Back.easeOut',
       });
       icon.setAlpha(1);
-      icon.setDepth(6);
+      icon.setDepth(8);
       if (label) label.setVisible(true);
 
       if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
