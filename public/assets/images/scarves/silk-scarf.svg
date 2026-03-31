@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Silk Scarf - colorful Hermes-style folded square -->
+  <g transform="translate(64,64)">
+    <!-- Main folded square shape -->
+    <path d="M-35,-10 Q-40,-30 -15,-35 Q0,-38 15,-35 Q40,-30 35,-10 Q38,15 20,25 Q5,35 -10,30 Q-30,22 -35,-10Z" fill="#c93545"/>
+    <!-- Decorative border -->
+    <path d="M-30,-6 Q-34,-24 -12,-28 Q0,-30 12,-28 Q34,-24 30,-6 Q32,12 18,20 Q5,28 -8,24 Q-25,18 -30,-6Z" fill="none" stroke="#daa520" stroke-width="1.5"/>
+    <!-- Inner pattern -->
+    <path d="M-22,-2 Q-25,-16 -8,-20 Q0,-22 8,-20 Q25,-16 22,-2 Q24,8 14,14 Q5,20 -4,18 Q-18,13 -22,-2Z" fill="#d84858"/>
+    <!-- Paisley/floral motifs -->
+    <circle cx="-8" cy="-10" r="4" fill="#daa520" opacity="0.5"/>
+    <circle cx="8" cy="-8" r="3.5" fill="#daa520" opacity="0.5"/>
+    <circle cx="0" cy="5" r="4" fill="#daa520" opacity="0.4"/>
+    <circle cx="-12" cy="6" r="2.5" fill="#e8c060" opacity="0.4"/>
+    <circle cx="12" cy="4" r="2.5" fill="#e8c060" opacity="0.4"/>
+    <!-- Folded edges (drape effect) -->
+    <path d="M20,25 Q25,30 30,28 Q35,20 25,35 Q15,38 10,32" fill="#b02838" opacity="0.7"/>
+    <path d="M-35,-10 Q-40,-5 -38,0 Q-42,-8 -38,-15" fill="#a82030" opacity="0.5"/>
+    <!-- Silk sheen -->
+    <ellipse cx="-5" cy="-12" rx="15" ry="8" fill="white" opacity="0.08"/>
+  </g>
+</svg>

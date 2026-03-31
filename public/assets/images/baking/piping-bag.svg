@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Piping Bag - pastry/frosting bag with tip -->
+  <g transform="translate(64,64)">
+    <!-- Main bag body (triangular) -->
+    <path d="M-25,-38 Q-10,-42 5,-38 Q15,-20 10,15 Q8,30 4,38" fill="#f0ebe0"/>
+    <path d="M-25,-38 Q-15,-20 -8,15 Q-5,30 4,38" fill="#e8e0d4"/>
+    <!-- Rolled top -->
+    <path d="M-25,-38 Q-18,-44 -10,-42 Q0,-44 5,-38 Q-5,-32 -25,-38Z" fill="#d8d0c4"/>
+    <!-- Frosting inside (peeking out) -->
+    <path d="M-20,-36 Q-10,-40 0,-38 Q-8,-30 -20,-36Z" fill="#f0a0b8" opacity="0.6"/>
+    <!-- Bag seam -->
+    <path d="M-10,-40 Q5,-15 6,30" stroke="#d0c8b8" stroke-width="1" fill="none" stroke-dasharray="3,3"/>
+    <!-- Metal tip -->
+    <path d="M-5,32 L4,32 L2,45 L-3,45Z" fill="#c0c0c0"/>
+    <path d="M-3,45 L2,45 L1,50 L-2,50Z" fill="#a0a0a0"/>
+    <!-- Star tip opening -->
+    <polygon points="0,50 -2,48 0,47 2,48" fill="#888"/>
+    <!-- Frosting coming out -->
+    <path d="M0,50 Q-3,55 -1,58 Q2,60 3,55 Q4,58 2,62 Q-1,60 -3,63" fill="#f0a0b8" stroke="#e890a8" stroke-width="0.5"/>
+    <!-- Texture wrinkles -->
+    <path d="M-15,-20 Q-5,-18 0,-25" stroke="#d8d0c4" stroke-width="0.8" fill="none" opacity="0.5"/>
+    <path d="M-10,-5 Q0,-2 5,-8" stroke="#d8d0c4" stroke-width="0.8" fill="none" opacity="0.5"/>
+    <path d="M-6,12 Q2,15 6,10" stroke="#d8d0c4" stroke-width="0.8" fill="none" opacity="0.5"/>
+  </g>
+</svg>

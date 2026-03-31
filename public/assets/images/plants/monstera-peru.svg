@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Monstera Peru - textured ridged leaves, no holes -->
+  <g transform="translate(64,68)">
+    <path d="M0,45 Q2,30 0,10" stroke="#2d5a1e" stroke-width="3" fill="none"/>
+    <!-- Leaf 1 -->
+    <path d="M0,8 Q-18,-5 -25,-25 Q-28,-38 -18,-42 Q-5,-38 0,-22 Q-3,-10 0,8Z" fill="#1a7535"/>
+    <!-- Textured ridges on leaf 1 -->
+    <path d="M-5,-10 Q-15,-18 -20,-28" stroke="#0f5a25" stroke-width="1.2" fill="none" opacity="0.5"/>
+    <path d="M-3,-15 Q-10,-22 -15,-32" stroke="#0f5a25" stroke-width="1" fill="none" opacity="0.4"/>
+    <path d="M-7,-8 Q-18,-12 -22,-22" stroke="#0f5a25" stroke-width="1" fill="none" opacity="0.4"/>
+    <!-- Leaf 2 -->
+    <path d="M2,6 Q20,-5 28,-22 Q30,-35 20,-40 Q8,-35 2,-20 Q3,-10 2,6Z" fill="#1e8240"/>
+    <!-- Textured ridges on leaf 2 -->
+    <path d="M6,-8 Q16,-16 22,-26" stroke="#0f5a25" stroke-width="1.2" fill="none" opacity="0.5"/>
+    <path d="M5,-14 Q12,-20 18,-30" stroke="#0f5a25" stroke-width="1" fill="none" opacity="0.4"/>
+    <path d="M8,-6 Q20,-10 24,-18" stroke="#0f5a25" stroke-width="1" fill="none" opacity="0.4"/>
+    <!-- Small leaf -->
+    <path d="M-3,12 Q-12,2 -14,-8 Q-15,-14 -10,-15 Q-5,-12 -3,12Z" fill="#25964a" opacity="0.7"/>
+    <!-- Midribs -->
+    <line x1="0" y1="6" x2="-14" y2="-32" stroke="#15712f" stroke-width="1.2" opacity="0.6"/>
+    <line x1="2" y1="4" x2="16" y2="-30" stroke="#15712f" stroke-width="1.2" opacity="0.6"/>
+    <!-- Dark green pot -->
+    <path d="M-14,45 L-11,28 L11,28 L14,45Z" fill="#2a4a2a"/>
+    <rect x="-16" y="25" width="32" height="5" rx="2" fill="#3a5a3a"/>
+  </g>
+</svg>

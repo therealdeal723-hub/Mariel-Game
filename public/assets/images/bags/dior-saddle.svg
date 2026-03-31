@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Dior Saddle Bag - curved D shape -->
+  <g transform="translate(64,64)">
+    <!-- Strap -->
+    <path d="M-5,-30 Q-10,-42 5,-42 Q25,-40 25,-28" stroke="#8b6848" stroke-width="3" fill="none"/>
+    <!-- Main body - distinctive saddle curve -->
+    <path d="M-30,-20 Q-35,0 -30,22 L25,22 Q38,22 40,5 Q42,-15 30,-25 Q15,-28 -30,-20Z" fill="#c4a882"/>
+    <!-- Flap with curved edge -->
+    <path d="M-30,-20 Q15,-28 30,-25 Q32,-15 28,-5 Q10,0 -25,-5 Q-32,-10 -30,-20Z" fill="#b8986e"/>
+    <!-- D stirrup hardware -->
+    <path d="M-28,-10 Q-28,-18 -20,-18 Q-12,-18 -12,-10 Q-12,-2 -20,-2 Q-28,-2 -28,-10Z" stroke="#daa520" stroke-width="2.5" fill="none"/>
+    <!-- Oblique pattern on flap -->
+    <g stroke="#a88860" stroke-width="0.5" opacity="0.4">
+      <line x1="-20" y1="-22" x2="10" y2="-8"/>
+      <line x1="-10" y1="-24" x2="20" y2="-10"/>
+      <line x1="0" y1="-25" x2="28" y2="-12"/>
+      <line x1="-20" y1="-16" x2="10" y2="-2"/>
+    </g>
+    <!-- Stitching -->
+    <path d="M-28,20 Q0,24 25,20" stroke="#a08060" stroke-width="0.6" stroke-dasharray="2,2" fill="none"/>
+  </g>
+</svg>

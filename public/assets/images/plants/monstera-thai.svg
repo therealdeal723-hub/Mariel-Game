@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Monstera Thai Constellation - variegated with cream splashes -->
+  <g transform="translate(64,68)">
+    <path d="M0,45 Q-2,28 1,8" stroke="#2d5a1e" stroke-width="4" fill="none"/>
+    <!-- Main leaf base -->
+    <path d="M0,-2 Q-18,-20 -32,-35 Q-42,-30 -45,-15 Q-42,-5 -32,0 Q-28,-8 -22,-12 Q-15,0 0,5 Q15,0 22,-12 Q28,-8 32,0 Q42,-5 45,-15 Q42,-30 32,-35 Q18,-20 0,-2Z" fill="#1a8a3e"/>
+    <!-- Cream constellation variegation patches -->
+    <path d="M-20,-18 Q-15,-25 -8,-20 Q-12,-12 -20,-18Z" fill="#f5ecd0" opacity="0.85"/>
+    <path d="M15,-15 Q22,-22 28,-15 Q22,-8 15,-15Z" fill="#f5ecd0" opacity="0.8"/>
+    <path d="M-5,-28 Q0,-35 8,-30 Q5,-24 -5,-28Z" fill="#f0e8c8" opacity="0.75"/>
+    <circle cx="35" cy="-10" r="5" fill="#f5ecd0" opacity="0.7"/>
+    <circle cx="-35" cy="-12" r="4" fill="#f0e8c8" opacity="0.65"/>
+    <path d="M-8,-10 Q-2,-18 5,-8 Q0,-3 -8,-10Z" fill="#f5ecd0" opacity="0.6"/>
+    <circle cx="8" cy="-25" r="3" fill="#f5ecd0" opacity="0.7"/>
+    <!-- Fenestrations -->
+    <ellipse cx="-18" cy="-22" rx="4" ry="5" fill="#2a1f3d"/>
+    <ellipse cx="18" cy="-22" rx="4" ry="5" fill="#2a1f3d"/>
+    <!-- Midrib and veins -->
+    <line x1="0" y1="0" x2="0" y2="-33" stroke="#15712f" stroke-width="1.5"/>
+    <line x1="0" y1="-12" x2="-22" y2="-20" stroke="#15712f" stroke-width="1" opacity="0.4"/>
+    <line x1="0" y1="-12" x2="22" y2="-20" stroke="#15712f" stroke-width="1" opacity="0.4"/>
+    <!-- White ceramic pot -->
+    <path d="M-16,45 L-13,28 L13,28 L16,45Z" fill="#f0ebe0"/>
+    <rect x="-18" y="25" width="36" height="5" rx="2" fill="#faf5ee"/>
+    <line x1="-14" y1="36" x2="14" y2="36" stroke="#e0d8c8" stroke-width="0.8"/>
+  </g>
+</svg>

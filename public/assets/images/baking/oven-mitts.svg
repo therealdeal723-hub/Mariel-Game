@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Oven Mitts - cute matching pair -->
+  <g transform="translate(64,64)">
+    <!-- Left mitt -->
+    <g transform="translate(-18,0)">
+      <!-- Main mitt body -->
+      <path d="M-15,-10 L-15,30 Q-15,38 -8,38 L8,38 Q15,38 15,30 L15,-10 Q15,-20 5,-22 L-5,-22 Q-15,-20 -15,-10Z" fill="#e06888"/>
+      <!-- Thumb -->
+      <path d="M-15,-5 Q-28,-8 -28,2 Q-28,12 -18,10" fill="#d85878"/>
+      <!-- Cuff -->
+      <rect x="-15" y="28" width="30" height="12" rx="2" fill="#d05070"/>
+      <!-- Pattern (small hearts) -->
+      <g fill="#f0a0b8" opacity="0.5">
+        <path d="M-3,0 Q-3,-3 0,-3 Q3,-3 3,0 Q3,3 0,5 Q-3,3 -3,0Z" transform="scale(0.7) translate(-4,5)"/>
+        <path d="M-3,0 Q-3,-3 0,-3 Q3,-3 3,0 Q3,3 0,5 Q-3,3 -3,0Z" transform="scale(0.7) translate(8,18)"/>
+        <path d="M-3,0 Q-3,-3 0,-3 Q3,-3 3,0 Q3,3 0,5 Q-3,3 -3,0Z" transform="scale(0.6) translate(-6,30)"/>
+      </g>
+      <!-- Quilted lines -->
+      <line x1="-10" y1="5" x2="10" y2="5" stroke="#c85070" stroke-width="0.8" opacity="0.4"/>
+      <line x1="-10" y1="15" x2="10" y2="15" stroke="#c85070" stroke-width="0.8" opacity="0.4"/>
+    </g>
+    <!-- Right mitt -->
+    <g transform="translate(18,0) scale(-1,1)">
+      <path d="M-15,-10 L-15,30 Q-15,38 -8,38 L8,38 Q15,38 15,30 L15,-10 Q15,-20 5,-22 L-5,-22 Q-15,-20 -15,-10Z" fill="#e06888"/>
+      <path d="M-15,-5 Q-28,-8 -28,2 Q-28,12 -18,10" fill="#d85878"/>
+      <rect x="-15" y="28" width="30" height="12" rx="2" fill="#d05070"/>
+      <g fill="#f0a0b8" opacity="0.5">
+        <path d="M-3,0 Q-3,-3 0,-3 Q3,-3 3,0 Q3,3 0,5 Q-3,3 -3,0Z" transform="scale(0.7) translate(-4,5)"/>
+        <path d="M-3,0 Q-3,-3 0,-3 Q3,-3 3,0 Q3,3 0,5 Q-3,3 -3,0Z" transform="scale(0.7) translate(8,18)"/>
+        <path d="M-3,0 Q-3,-3 0,-3 Q3,-3 3,0 Q3,3 0,5 Q-3,3 -3,0Z" transform="scale(0.6) translate(-6,30)"/>
+      </g>
+      <line x1="-10" y1="5" x2="10" y2="5" stroke="#c85070" stroke-width="0.8" opacity="0.4"/>
+      <line x1="-10" y1="15" x2="10" y2="15" stroke="#c85070" stroke-width="0.8" opacity="0.4"/>
+    </g>
+    <!-- Hanging loop -->
+    <path d="M-18,-22 Q-18,-30 -14,-30" stroke="#c85070" stroke-width="2" fill="none"/>
+    <path d="M18,-22 Q18,-30 14,-30" stroke="#c85070" stroke-width="2" fill="none"/>
+  </g>
+</svg>

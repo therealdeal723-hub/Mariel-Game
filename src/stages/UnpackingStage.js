@@ -19,36 +19,71 @@ const BOX_H = 400;
 const BOX_CENTER_X = BOX_X + BOX_W / 2;
 const BOX_CENTER_Y = BOX_Y + BOX_H / 2;
 
-// Items — each has a multi-cell shape, color, label, and emoji icon
+// Items — each has a multi-cell shape, color, label, and texture key
 const ITEMS = [
-  { id: 'couch', label: 'Couch', shape: [[0,0],[1,0],[2,0]], color: 0x8b6914, icon: '\uD83D\uDECB\uFE0F' },
-  { id: 'bed', label: 'Bed', shape: [[0,0],[1,0],[0,1],[1,1]], color: 0x4a6fa5, icon: '\uD83D\uDECF\uFE0F' },
-  { id: 'table', label: 'Table', shape: [[0,0],[1,0]], color: 0x6b4226, icon: '\uD83E\uDE91' },
-  { id: 'bookshelf', label: 'Bookshelf', shape: [[0,0],[0,1],[0,2]], color: 0x8b4513, icon: '\uD83D\uDCDA' },
-  { id: 'tv', label: 'TV', shape: [[0,0],[1,0]], color: 0x333333, icon: '\uD83D\uDCFA' },
-  { id: 'plant', label: 'Plant', shape: [[0,0]], color: 0x2d8b46, icon: '\uD83E\uDEB4' },
-  { id: 'lamp', label: 'Lamp', shape: [[0,0]], color: 0xffd700, icon: '\uD83D\uDCA1' },
-  { id: 'rug', label: 'Rug', shape: [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]], color: 0xcc5533, icon: '\uD83D\uDFEB' },
-  { id: 'boxes', label: "Nick's Boxes", shape: [[0,0],[1,0],[0,1]], color: 0xe94560, icon: '\uD83D\uDCE6' },
-  { id: 'guitar', label: "Nick's Guitar", shape: [[0,0],[0,1]], color: 0xd4a017, icon: '\uD83C\uDFB8' },
-  { id: 'photos', label: 'Photo Frame', shape: [[0,0]], color: 0xeecbad, icon: '\uD83D\uDDBC\uFE0F' },
-  { id: 'kitchenbox', label: 'Kitchen Box', shape: [[0,0],[1,0]], color: 0x4ecca3, icon: '\uD83C\uDF73' },
+  // Monsteras
+  { id: 'monstera-deliciosa', label: 'Monstera Deliciosa', shape: [[0,0],[0,1]], color: 0x1a8a3e, texture: 'item-monstera-deliciosa' },
+  { id: 'monstera-adansonii', label: 'Swiss Cheese Plant', shape: [[0,0],[0,1]], color: 0x22a848, texture: 'item-monstera-adansonii' },
+  { id: 'monstera-thai', label: 'Thai Constellation', shape: [[0,0],[0,1]], color: 0x1a8a3e, texture: 'item-monstera-thai' },
+  { id: 'monstera-albo', label: 'Monstera Albo', shape: [[0,0],[0,1]], color: 0x1a8a3e, texture: 'item-monstera-albo' },
+  { id: 'monstera-peru', label: 'Monstera Peru', shape: [[0,0]], color: 0x1a7535, texture: 'item-monstera-peru' },
+  { id: 'mini-monstera', label: 'Mini Monstera', shape: [[0,0]], color: 0x2aad50, texture: 'item-mini-monstera' },
+
+  // Designer Bags
+  { id: 'birkin', label: 'Birkin Bag', shape: [[0,0],[1,0]], color: 0xc4874a, texture: 'item-birkin' },
+  { id: 'chanel-flap', label: 'Chanel Classic Flap', shape: [[0,0]], color: 0x1a1a1a, texture: 'item-chanel-flap' },
+  { id: 'lv-neverfull', label: 'LV Neverfull', shape: [[0,0],[1,0]], color: 0xc4943a, texture: 'item-lv-neverfull' },
+  { id: 'dior-saddle', label: 'Dior Saddle', shape: [[0,0],[1,0]], color: 0xc4a882, texture: 'item-dior-saddle' },
+  { id: 'ysl-envelope', label: 'YSL Envelope', shape: [[0,0]], color: 0x2a2a2a, texture: 'item-ysl-envelope' },
+
+  // Jackets
+  { id: 'leather-jacket', label: 'Leather Jacket', shape: [[0,0],[1,0],[0,1],[1,1]], color: 0x1a1a1a, texture: 'item-leather-jacket' },
+  { id: 'denim-jacket', label: 'Denim Jacket', shape: [[0,0],[1,0],[0,1],[1,1]], color: 0x4a6a8a, texture: 'item-denim-jacket' },
+  { id: 'blazer', label: 'Blazer', shape: [[0,0],[1,0],[0,1],[1,1]], color: 0x2a2848, texture: 'item-blazer' },
+
+  // Scarves
+  { id: 'silk-scarf', label: 'Silk Scarf', shape: [[0,0]], color: 0xc93545, texture: 'item-silk-scarf' },
+  { id: 'cashmere-wrap', label: 'Cashmere Wrap', shape: [[0,0],[1,0]], color: 0xe8d5c0, texture: 'item-cashmere-wrap' },
+  { id: 'knit-scarf', label: 'Knit Scarf', shape: [[0,0],[0,1]], color: 0xc44040, texture: 'item-knit-scarf' },
+
+  // Baking Equipment
+  { id: 'stand-mixer', label: 'Stand Mixer', shape: [[0,0],[0,1]], color: 0xe04868, texture: 'item-stand-mixer' },
+  { id: 'rolling-pin', label: 'Rolling Pin', shape: [[0,0],[1,0]], color: 0xdcc4a0, texture: 'item-rolling-pin' },
+  { id: 'whisk', label: 'Whisk', shape: [[0,0]], color: 0xc0c0c0, texture: 'item-whisk' },
+  { id: 'mixing-bowls', label: 'Mixing Bowls', shape: [[0,0],[1,0]], color: 0x4a90c8, texture: 'item-mixing-bowls' },
+  { id: 'measuring-cups', label: 'Measuring Cups', shape: [[0,0]], color: 0xe0e0e0, texture: 'item-measuring-cups' },
+  { id: 'piping-bag', label: 'Piping Bag', shape: [[0,0]], color: 0xf0ebe0, texture: 'item-piping-bag' },
+  { id: 'cake-stand', label: 'Cake Stand', shape: [[0,0],[0,1]], color: 0xf0ebe5, texture: 'item-cake-stand' },
+  { id: 'oven-mitts', label: 'Oven Mitts', shape: [[0,0]], color: 0xe06888, texture: 'item-oven-mitts' },
 ];
 
 // Nick's commentary keyed to item id
 const NICK_COMMENTS = {
-  couch: '"The couch goes RIGHT there. Trust me."',
-  bed: '"I measured the bedroom... mostly."',
-  table: '"That table is load-bearing, I think."',
-  bookshelf: '"My bookshelf stays. Non-negotiable."',
-  tv: '"Big TV energy."',
-  plant: '"Every home needs a plant to... not water."',
-  lamp: '"Mood lighting is ESSENTIAL."',
-  rug: '"The rug really ties the room together."',
-  boxes: '"These boxes? Mostly sentimental stuff. And snacks."',
-  guitar: '"The guitar stays out. What if I get inspired?"',
-  photos: '"Our first photo together! ...okay YOUR photo, for now."',
-  kitchenbox: '"Kitchen stuff! I cook sometimes. Cereal counts."',
+  'monstera-deliciosa': '"That one\'s bigger than our apartment."',
+  'monstera-adansonii': '"Why does it have holes? Is it broken?"',
+  'monstera-thai': '"This one costs HOW much?!"',
+  'monstera-albo': '"Half green, half white... half the price? No? Okay."',
+  'monstera-peru': '"At least this one doesn\'t have holes."',
+  'mini-monstera': '"A baby plant! ...it\'ll be 6 feet tall by Tuesday."',
+  'birkin': '"Do I want to know how much that costs?"',
+  'chanel-flap': '"That bag has its own insurance policy."',
+  'lv-neverfull': '"Neverfull? Challenge accepted."',
+  'dior-saddle': '"It looks like a tiny horse saddle. I love it."',
+  'ysl-envelope': '"Very sleek. Very \'I have my life together.\'"',
+  'leather-jacket': '"Okay that jacket is actually fire."',
+  'denim-jacket': '"Classic. Goes with everything."',
+  'blazer': '"For when we pretend to be fancy."',
+  'silk-scarf': '"Very Audrey Hepburn."',
+  'cashmere-wrap': '"I will absolutely steal this when it\'s cold."',
+  'knit-scarf': '"Cozy season essential."',
+  'stand-mixer': '"She\'s about to make SO many cakes."',
+  'rolling-pin': '"This doubles as home defense."',
+  'whisk': '"Whisk me away! ...I\'m sorry."',
+  'mixing-bowls': '"One bowl for mixing, two for snacking."',
+  'measuring-cups': '"Baking is just science with sugar."',
+  'piping-bag': '"Professional frosting deployment system."',
+  'cake-stand': '"Every cake deserves a pedestal."',
+  'oven-mitts': '"Cute AND functional."',
 };
 
 export class UnpackingStage extends BaseStage {
@@ -284,12 +319,11 @@ export class UnpackingStage extends BaseStage {
 
     this.sfx.click();
 
-    // Create the item icon popping out of the box
-    const icon = this.add.text(BOX_CENTER_X, BOX_CENTER_Y, item.icon, {
-      fontSize: '48px',
-    }).setOrigin(0.5).setDepth(6);
+    // Create the item image popping out of the box
+    const icon = this.add.image(BOX_CENTER_X, BOX_CENTER_Y, item.texture)
+      .setOrigin(0.5).setDepth(6).setDisplaySize(80, 80);
 
-    const label = this.add.text(BOX_CENTER_X, BOX_CENTER_Y + 40, item.label, {
+    const label = this.add.text(BOX_CENTER_X, BOX_CENTER_Y + 50, item.label, {
       fontFamily: 'Georgia, serif',
       fontSize: '13px',
       color: '#fff',
@@ -298,10 +332,13 @@ export class UnpackingStage extends BaseStage {
 
     // Pop-out animation
     icon.setScale(0);
+    const targetScaleX = icon.scaleX;
+    const targetScaleY = icon.scaleY;
     label.setAlpha(0);
     this.tweens.add({
       targets: icon,
-      scale: 1,
+      scaleX: targetScaleX,
+      scaleY: targetScaleY,
       duration: 350,
       ease: 'Back.easeOut',
     });
@@ -449,11 +486,15 @@ export class UnpackingStage extends BaseStage {
       this.currentBoxItem = null;
     } else {
       // Snap back to box center
+      icon.setDisplaySize(80, 80);
+      const snapScaleX = icon.scaleX;
+      const snapScaleY = icon.scaleY;
       this.tweens.add({
         targets: icon,
         x: BOX_CENTER_X,
         y: BOX_CENTER_Y,
-        scale: 1,
+        scaleX: snapScaleX,
+        scaleY: snapScaleY,
         duration: 200,
         ease: 'Back.easeOut',
       });
@@ -492,10 +533,9 @@ export class UnpackingStage extends BaseStage {
     this.dragRotation = 0;
     this.isDragging = true;
 
-    // Create a temporary drag icon
-    const dragIcon = this.add.text(sprite.x, sprite.y, item.icon, {
-      fontSize: '48px',
-    }).setOrigin(0.5).setDepth(20).setScale(1.3).setAlpha(0.9);
+    // Create a temporary drag image
+    const dragIcon = this.add.image(sprite.x, sprite.y, item.texture)
+      .setOrigin(0.5).setDepth(20).setDisplaySize(80, 80).setAlpha(0.9);
 
     dragIcon.setInteractive({ useHandCursor: true, draggable: true });
     this.dragIcon = dragIcon;
@@ -620,15 +660,13 @@ export class UnpackingStage extends BaseStage {
     const centerX = GRID_X + (col + (minC + maxC + 1) / 2) * CELL_SIZE;
     const centerY = GRID_Y + (row + (minR + maxR + 1) / 2) * CELL_SIZE;
 
-    const baseFontSize = 28;
-    const spanMax = Math.max(spanW, spanH);
-    const fillScale = (spanMax * CELL_SIZE * 0.75) / baseFontSize;
+    const displayW = spanW * CELL_SIZE * 0.85;
+    const displayH = spanH * CELL_SIZE * 0.85;
 
-    const placedIcon = this.add.text(centerX, centerY, item.icon, {
-      fontSize: `${baseFontSize}px`,
-    }).setOrigin(0.5).setDepth(4);
+    const placedIcon = this.add.image(centerX, centerY, item.texture)
+      .setOrigin(0.5).setDepth(4).setDisplaySize(displayW, displayH);
 
-    const record = { sprite: placedIcon, item, col, row, shape, fillScale };
+    const record = { sprite: placedIcon, item, col, row, shape };
     this.placedItemSprites.push(record);
 
     // Make it draggable for rearranging
@@ -639,15 +677,17 @@ export class UnpackingStage extends BaseStage {
     });
 
     if (animate) {
-      placedIcon.setScale(0.3);
+      // Store target scale from setDisplaySize, then animate from small
+      const targetSX = placedIcon.scaleX;
+      const targetSY = placedIcon.scaleY;
+      placedIcon.setScale(0.05);
       this.tweens.add({
         targets: placedIcon,
-        scale: fillScale,
+        scaleX: targetSX,
+        scaleY: targetSY,
         duration: 300,
         ease: 'Back.easeOut',
       });
-    } else {
-      placedIcon.setScale(fillScale);
     }
 
     return placedIcon;

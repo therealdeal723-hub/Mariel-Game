@@ -573,18 +573,18 @@ export class AxeThrowingStage extends BaseStage {
       color: '#ffffff',
     }).setOrigin(0.5);
 
-    // Player character placeholder
-    this.playerSprite = this.add.rectangle(PLAYER_THROW_X, PLAYER_THROW_Y, 40, 70, 0x4ecca3)
-      .setStrokeStyle(2, 0xffffff);
+    // Player character — Mariel
+    this.playerSprite = this.add.image(PLAYER_THROW_X, PLAYER_THROW_Y, 'char-mariel')
+      .setDisplaySize(50, 75);
     this.add.text(PLAYER_THROW_X, PLAYER_THROW_Y - 50, 'Mariel', {
       fontFamily: 'Georgia, serif',
       fontSize: '12px',
       color: '#4ecca3',
     }).setOrigin(0.5);
 
-    // Nick character placeholder
-    this.nickSprite = this.add.rectangle(PLAYER_THROW_X, PLAYER_THROW_Y + 100, 40, 70, 0xe94560)
-      .setStrokeStyle(2, 0xffffff);
+    // Nick character
+    this.nickSprite = this.add.image(PLAYER_THROW_X, PLAYER_THROW_Y + 100, 'char-nick')
+      .setDisplaySize(50, 75);
     this.nickSprite.setVisible(false);
     this.nickSpriteLabel = this.add.text(PLAYER_THROW_X, PLAYER_THROW_Y + 40, 'Nick', {
       fontFamily: 'Georgia, serif',
