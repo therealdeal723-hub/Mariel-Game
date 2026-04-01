@@ -169,26 +169,107 @@ export class AxeThrowingStage extends BaseStage {
   }
 
   createBackground() {
-    // Venue background
-    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x2d1b0e);
+    // Dark base
+    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x1a0e06);
 
-    // Wooden floor
-    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 60, GAME_WIDTH, 120, 0x5c3a1e);
+    // Wooden wall planks — alternating shades for a real wood look
+    const wallG = this.add.graphics();
+    const plankColors = [0x5c3a1e, 0x6b4226, 0x4a2e14, 0x5a3820, 0x6d4830, 0x4e3018];
+    const plankH = 32;
+    for (let y = 0; y < GAME_HEIGHT - 100; y += plankH) {
+      const color = plankColors[(y / plankH) % plankColors.length | 0];
+      wallG.fillStyle(color, 1);
+      wallG.fillRect(0, y, GAME_WIDTH, plankH - 1);
+      // Grain lines within each plank
+      wallG.lineStyle(1, 0x000000, 0.08);
+      wallG.lineBetween(0, y + plankH * 0.3, GAME_WIDTH, y + plankH * 0.3);
+      wallG.lineBetween(0, y + plankH * 0.7, GAME_WIDTH, y + plankH * 0.7);
+      // Plank seam (dark line between planks)
+      wallG.lineStyle(1, 0x1a0e06, 0.5);
+      wallG.lineBetween(0, y + plankH - 1, GAME_WIDTH, y + plankH - 1);
+    }
 
-    // Venue name banner
-    this.add.text(GAME_WIDTH / 2, 25, '\uD83E\uDE93 AXE HOUSE \uD83E\uDE93', {
+    // Vertical plank seams (staggered like real wood paneling)
+    wallG.lineStyle(1, 0x1a0e06, 0.25);
+    for (let y = 0; y < GAME_HEIGHT - 100; y += plankH) {
+      const offset = ((y / plankH) % 2) * 120 + 60;
+      for (let x = offset; x < GAME_WIDTH; x += 240) {
+        wallG.lineBetween(x, y, x, y + plankH);
+      }
+    }
+
+    // Knotholes for texture
+    const knotG = this.add.graphics();
+    knotG.fillStyle(0x3a2010, 0.4);
+    knotG.fillCircle(150, 180, 6);
+    knotG.fillCircle(520, 300, 5);
+    knotG.fillCircle(880, 150, 7);
+    knotG.fillCircle(350, 420, 4);
+    knotG.fillStyle(0x2a1508, 0.3);
+    knotG.fillCircle(150, 180, 3);
+    knotG.fillCircle(520, 300, 2.5);
+    knotG.fillCircle(880, 150, 3.5);
+
+    // Wooden floor (darker, wider planks)
+    const floorG = this.add.graphics();
+    const floorY = GAME_HEIGHT - 100;
+    const floorColors = [0x3a2210, 0x4a2e18, 0x3e2614];
+    for (let y = floorY; y < GAME_HEIGHT; y += 25) {
+      const fc = floorColors[((y - floorY) / 25) % floorColors.length | 0];
+      floorG.fillStyle(fc, 1);
+      floorG.fillRect(0, y, GAME_WIDTH, 24);
+      floorG.lineStyle(1, 0x1a0e06, 0.4);
+      floorG.lineBetween(0, y + 24, GAME_WIDTH, y + 24);
+    }
+    // Floor-wall seam (baseboard)
+    floorG.fillStyle(0x2a1808, 1);
+    floorG.fillRect(0, floorY - 4, GAME_WIDTH, 8);
+
+    // Warm ambient lighting overlay (subtle gradient from top)
+    const ambientG = this.add.graphics();
+    ambientG.fillStyle(0xffa040, 0.04);
+    ambientG.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT / 3);
+
+    // Hanging string lights across the top
+    const lightG = this.add.graphics();
+    lightG.lineStyle(1.5, 0x333333, 0.6);
+    // Draped wire
+    for (let x = 50; x < GAME_WIDTH - 50; x += 3) {
+      const sag = Math.sin((x - 50) / (GAME_WIDTH - 100) * Math.PI) * 15;
+      const sag2 = Math.sin(x * 0.05) * 4;
+      lightG.fillStyle(0x333333, 0.6);
+      lightG.fillRect(x, 42 + sag + sag2, 2, 1);
+    }
+    // Bulbs
+    const bulbColors = [0xffd700, 0xff8c40, 0xffaa30, 0xffe060];
+    for (let x = 80; x < GAME_WIDTH - 50; x += 85) {
+      const sag = Math.sin((x - 50) / (GAME_WIDTH - 100) * Math.PI) * 15;
+      const sag2 = Math.sin(x * 0.05) * 4;
+      const by = 42 + sag + sag2;
+      // Wire to bulb
+      lightG.lineStyle(1, 0x333333, 0.5);
+      lightG.lineBetween(x, by, x, by + 8);
+      // Bulb glow
+      const bc = bulbColors[((x / 85) | 0) % bulbColors.length];
+      lightG.fillStyle(bc, 0.15);
+      lightG.fillCircle(x, by + 12, 12);
+      // Bulb
+      lightG.fillStyle(bc, 0.9);
+      lightG.fillCircle(x, by + 12, 4);
+    }
+
+    // Venue name banner (wood sign style)
+    const signG = this.add.graphics();
+    signG.fillStyle(0x2a1808, 0.8);
+    signG.fillRoundedRect(GAME_WIDTH / 2 - 120, 8, 240, 30, 4);
+    signG.lineStyle(1, 0x6b4226, 0.6);
+    signG.strokeRoundedRect(GAME_WIDTH / 2 - 120, 8, 240, 30, 4);
+    this.add.text(GAME_WIDTH / 2, 23, '\uD83E\uDE93 AXE HOUSE \uD83E\uDE93', {
       fontFamily: 'Georgia, serif',
-      fontSize: '20px',
+      fontSize: '18px',
       color: '#ffd700',
       fontStyle: 'bold',
     }).setOrigin(0.5);
-
-    // Wooden wall planks (decorative lines)
-    const wallGraphics = this.add.graphics();
-    wallGraphics.lineStyle(1, 0x3d2510, 0.3);
-    for (let y = 60; y < GAME_HEIGHT - 120; y += 40) {
-      wallGraphics.lineBetween(0, y, GAME_WIDTH, y);
-    }
   }
 
   createTarget() {
@@ -575,21 +656,23 @@ export class AxeThrowingStage extends BaseStage {
 
     // Player character — Mariel
     this.playerSprite = this.add.image(PLAYER_THROW_X, PLAYER_THROW_Y, 'char-mariel')
-      .setDisplaySize(50, 75);
-    this.add.text(PLAYER_THROW_X, PLAYER_THROW_Y - 50, 'Mariel', {
+      .setDisplaySize(80, 120);
+    this.add.text(PLAYER_THROW_X, PLAYER_THROW_Y - 72, 'Mariel', {
       fontFamily: 'Georgia, serif',
-      fontSize: '12px',
+      fontSize: '14px',
       color: '#4ecca3',
+      fontStyle: 'bold',
     }).setOrigin(0.5);
 
     // Nick character
     this.nickSprite = this.add.image(PLAYER_THROW_X, PLAYER_THROW_Y + 100, 'char-nick')
-      .setDisplaySize(50, 75);
+      .setDisplaySize(80, 120);
     this.nickSprite.setVisible(false);
-    this.nickSpriteLabel = this.add.text(PLAYER_THROW_X, PLAYER_THROW_Y + 40, 'Nick', {
+    this.nickSpriteLabel = this.add.text(PLAYER_THROW_X, PLAYER_THROW_Y + 28, 'Nick', {
       fontFamily: 'Georgia, serif',
-      fontSize: '12px',
+      fontSize: '14px',
       color: '#e94560',
+      fontStyle: 'bold',
     }).setOrigin(0.5).setVisible(false);
 
     // "Start Game" button (shown during practice)
