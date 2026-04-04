@@ -281,12 +281,69 @@ describe('Axe Throwing Commentary', () => {
     expect(axeSrc).not.toContain('NICK_PRACTICE_HECKLES');
   });
 
-  it('positions commentary text near Nick sprite', () => {
-    // Commentary text should use PLAYER_THROW_X position (near Nick), not centered
-    expect(axeSrc).toMatch(/commentaryText\s*=\s*this\.add\.text\(\s*PLAYER_THROW_X/);
+  it('positions commentary text near Nick spectator spot', () => {
+    // Commentary text should be positioned near Nick's rest position (right side)
+    expect(axeSrc).toMatch(/commentaryText\s*=\s*this\.add\.text\(\s*GAME_WIDTH\s*-\s*100/);
   });
 
   it('has word wrap on commentary text', () => {
     expect(axeSrc).toContain('wordWrap');
+  });
+
+  it('Nick sprite is always visible (no setVisible false on create)', () => {
+    // Nick should not be hidden on creation anymore
+    expect(axeSrc).not.toMatch(/nickSprite\.setVisible\(false\)/);
+  });
+
+  it('Nick has a spectator rest position', () => {
+    expect(axeSrc).toContain('nickRestX');
+    expect(axeSrc).toContain('nickRestY');
+  });
+
+  it('venue is named Blade & Timber', () => {
+    expect(axeSrc).toContain('Blade & Timber');
+    expect(axeSrc).not.toContain('AXE HOUSE');
+  });
+});
+
+// ─── Unpacking Stage ───────────────────────────────────────────────
+
+describe('Unpacking Stage', () => {
+  const unpSrc = readFileSync(
+    resolve(import.meta.dirname, '../src/stages/UnpackingStage.js'),
+    'utf-8'
+  );
+
+  it('has room zones defined', () => {
+    expect(unpSrc).toContain('ROOM_ZONES');
+    expect(unpSrc).toContain('Kitchen');
+    expect(unpSrc).toContain('Living Room');
+    expect(unpSrc).toContain('Bedroom');
+    expect(unpSrc).toContain('Closet');
+  });
+
+  it('uses cozy music instead of default', () => {
+    expect(unpSrc).toContain('startCozyMusic');
+    expect(unpSrc).not.toMatch(/sfx\.startMusic\(\)/);
+  });
+
+  it('has a cozy scoring system', () => {
+    expect(unpSrc).toContain('cozyScore');
+    expect(unpSrc).toContain('getZoneBonus');
+    expect(unpSrc).toContain('drawCozyMeter');
+  });
+
+  it('has room comes alive ambient effects', () => {
+    expect(unpSrc).toContain('addAmbientDetail');
+    expect(unpSrc).toContain('ambientGroup');
+  });
+
+  it('has zone hints in Nick commentary', () => {
+    expect(unpSrc).toContain('preferredZone');
+    expect(unpSrc).toContain('Try the');
+  });
+
+  it('has item category mapping for zone scoring', () => {
+    expect(unpSrc).toContain('getItemCategory');
   });
 });

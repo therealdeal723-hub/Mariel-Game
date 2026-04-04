@@ -689,6 +689,72 @@ export class SoundFX {
     }
   }
 
+  // ─── Cozy Lo-fi Music (for Unpacking stage) ─────────────────────
+
+  /**
+   * Starts a warmer, cozier lo-fi music loop distinct from the default.
+   * Slower tempo, warmer chords, gentle piano-like melody, rain texture.
+   */
+  startCozyMusic() {
+    if (!this.enabled || this._musicPlaying) return;
+    this._musicPlaying = true;
+    this._musicVolume = 0.16;
+
+    if (this._musicKickoff) {
+      document.removeEventListener('pointerdown', this._musicKickoff);
+      document.removeEventListener('keydown', this._musicKickoff);
+      this._musicKickoff = null;
+    }
+
+    if (this.ctx.state !== 'running') {
+      this._musicKickoff = () => {
+        document.removeEventListener('pointerdown', this._musicKickoff);
+        document.removeEventListener('keydown', this._musicKickoff);
+        this._musicKickoff = null;
+        this.ctx.resume().then(() => {
+          if (this._musicPlaying && !this._musicGain) this._initCozyMusicGraph();
+        });
+      };
+      document.addEventListener('pointerdown', this._musicKickoff);
+      document.addEventListener('keydown', this._musicKickoff);
+      return;
+    }
+
+    this._initCozyMusicGraph();
+  }
+
+  _initCozyMusicGraph() {
+    this._musicGain = this.ctx.createGain();
+    this._musicGain.gain.value = this._musicVolume;
+    this._musicGain.connect(this.ctx.destination);
+
+    // Extra warm filter
+    this._musicFilter = this.ctx.createBiquadFilter();
+    this._musicFilter.type = 'lowpass';
+    this._musicFilter.frequency.value = 750;
+    this._musicFilter.Q.value = 0.8;
+    this._musicFilter.connect(this._musicGain);
+
+    // Dreamy chord progression (Dmaj7 → Bm7 → Gmaj7 → A7sus4)
+    this._chords = [
+      [293.66, 369.99, 440.00, 554.37],  // Dmaj7
+      [246.94, 293.66, 369.99, 440.00],  // Bm7
+      [196.00, 246.94, 293.66, 369.99],  // Gmaj7
+      [220.00, 293.66, 329.63, 440.00],  // A7sus4
+    ];
+    this._chordIndex = 0;
+    this._beatIndex = 0;
+
+    // Slower tempo: ~60 BPM
+    this._beatInterval = 1000;
+    this._beatsPerChord = 8;
+
+    this._bassNotes = [146.83, 123.47, 98.00, 110.00]; // D3, B2, G2, A2
+    this._melodyNotes = [293.66, 329.63, 369.99, 440.00, 493.88, 587.33]; // D major pentatonic
+
+    this._scheduleNextBeat();
+  }
+
   /** Clean up when scene is destroyed */
   destroy() {
     this.stopChargeTone();
