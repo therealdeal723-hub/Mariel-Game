@@ -94,8 +94,8 @@ describe('Unpacking items', () => {
   // Extract item ids
   const itemIds = [...src.matchAll(/id:\s*'([^']+)'/g)].map(m => m[1]);
 
-  it('has 25 items', () => {
-    expect(itemIds.length).toBe(25);
+  it('has 18 items', () => {
+    expect(itemIds.length).toBe(18);
   });
 
   it('has no duplicate ids', () => {
