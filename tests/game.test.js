@@ -267,3 +267,26 @@ describe('Favicon', () => {
     expect(html).toContain('❤');
   });
 });
+
+// ─── Axe Throwing Commentary ───────────────────────────────────────
+
+describe('Axe Throwing Commentary', () => {
+  const axeSrc = readFileSync(
+    resolve(import.meta.dirname, '../src/stages/AxeThrowingStage.js'),
+    'utf-8'
+  );
+
+  it('does not show Nick heckles during practice mode', () => {
+    // NICK_PRACTICE_HECKLES constant should not exist
+    expect(axeSrc).not.toContain('NICK_PRACTICE_HECKLES');
+  });
+
+  it('positions commentary text near Nick sprite', () => {
+    // Commentary text should use PLAYER_THROW_X position (near Nick), not centered
+    expect(axeSrc).toMatch(/commentaryText\s*=\s*this\.add\.text\(\s*PLAYER_THROW_X/);
+  });
+
+  it('has word wrap on commentary text', () => {
+    expect(axeSrc).toContain('wordWrap');
+  });
+});

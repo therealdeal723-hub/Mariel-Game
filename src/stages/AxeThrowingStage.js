@@ -72,17 +72,6 @@ const NICK_MISS_REACTIONS = [
   '"The axe is broken."',
 ];
 
-// Nick heckling during Mariel's practice throws
-const NICK_PRACTICE_HECKLES = [
-  '"You hold it like a spatula."',
-  '"Are you aiming at the wall?"',
-  '"My grandma throws harder."',
-  '"Okay okay, not bad. For a beginner."',
-  '"I\'m timing you, by the way."',
-  '"This is painful to watch."',
-  '"...you know the POINTY end goes forward, right?"',
-];
-
 // Nick reacts to Mariel's throws during the game
 const NICK_REACT_PLAYER_BULLSEYE = [
   '"WHAT. No. That didn\'t count."',
@@ -405,13 +394,15 @@ export class AxeThrowingStage extends BaseStage {
       color: '#aaaaaa',
     }).setOrigin(0.5);
 
-    // Commentary text (for Nick's ridiculous moves)
-    this.commentaryText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 30, '', {
+    // Commentary text (for Nick's moves — positioned near Nick's sprite)
+    this.commentaryText = this.add.text(PLAYER_THROW_X, PLAYER_THROW_Y + 175, '', {
       fontFamily: 'Georgia, serif',
-      fontSize: '16px',
+      fontSize: '14px',
       color: '#ffd700',
       fontStyle: 'italic',
-    }).setOrigin(0.5);
+      wordWrap: { width: 250 },
+      align: 'center',
+    }).setOrigin(0.5, 0);
 
     // Hide scoreboard during practice
     this.setScoreboardVisible(false);
@@ -1245,19 +1236,10 @@ export class AxeThrowingStage extends BaseStage {
       });
     }
 
-    // In practice mode, just show the score popup + Nick heckles
+    // In practice mode, just show the score popup
     if (this.gameMode === MODE_PRACTICE) {
       this.practiceThrows++;
       this.showScorePopup(x, y, scoreLabel, points, false);
-
-      // Nick heckles from the sideline
-      if (this.practiceThrows <= NICK_PRACTICE_HECKLES.length) {
-        const heckle = NICK_PRACTICE_HECKLES[this.practiceThrows - 1];
-        this.commentaryText.setText(heckle);
-        this.time.delayedCall(2500, () => {
-          if (this.commentaryText.text === heckle) this.commentaryText.setText('');
-        });
-      }
 
       // Show "Start Game" once minimum practice throws are done
       if (this.practiceThrows >= this.minPracticeThrows && !this.startGameBtn.visible) {
