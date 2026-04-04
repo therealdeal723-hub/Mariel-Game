@@ -253,9 +253,9 @@ export class AxeThrowingStage extends BaseStage {
     signG.fillRoundedRect(GAME_WIDTH / 2 - 120, 8, 240, 30, 4);
     signG.lineStyle(1, 0x6b4226, 0.6);
     signG.strokeRoundedRect(GAME_WIDTH / 2 - 120, 8, 240, 30, 4);
-    this.add.text(GAME_WIDTH / 2, 23, '\uD83E\uDE93 AXE HOUSE \uD83E\uDE93', {
+    this.add.text(GAME_WIDTH / 2, 23, '\uD83E\uDE93 Blade & Timber \uD83E\uDE93', {
       fontFamily: 'Georgia, serif',
-      fontSize: '18px',
+      fontSize: '16px',
       color: '#ffd700',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -394,13 +394,13 @@ export class AxeThrowingStage extends BaseStage {
       color: '#aaaaaa',
     }).setOrigin(0.5);
 
-    // Commentary text (for Nick's moves — positioned near Nick's sprite)
-    this.commentaryText = this.add.text(PLAYER_THROW_X, PLAYER_THROW_Y + 175, '', {
+    // Commentary text (for Nick's moves — positioned near Nick's spectator spot)
+    this.commentaryText = this.add.text(GAME_WIDTH - 100, PLAYER_THROW_Y + 115, '', {
       fontFamily: 'Georgia, serif',
       fontSize: '14px',
       color: '#ffd700',
       fontStyle: 'italic',
-      wordWrap: { width: 250 },
+      wordWrap: { width: 180 },
       align: 'center',
     }).setOrigin(0.5, 0);
 
@@ -655,16 +655,18 @@ export class AxeThrowingStage extends BaseStage {
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    // Nick character
-    this.nickSprite = this.add.image(PLAYER_THROW_X, PLAYER_THROW_Y + 100, 'char-nick')
+    // Nick character — always visible, stands to the right as spectator
+    // During his turn, he slides to the throwing position
+    this.nickRestX = GAME_WIDTH - 100;
+    this.nickRestY = PLAYER_THROW_Y + 40;
+    this.nickSprite = this.add.image(this.nickRestX, this.nickRestY, 'char-nick')
       .setDisplaySize(80, 120);
-    this.nickSprite.setVisible(false);
-    this.nickSpriteLabel = this.add.text(PLAYER_THROW_X, PLAYER_THROW_Y + 28, 'Nick', {
+    this.nickSpriteLabel = this.add.text(this.nickRestX, this.nickRestY - 72, 'Nick', {
       fontFamily: 'Georgia, serif',
       fontSize: '14px',
       color: '#e94560',
       fontStyle: 'bold',
-    }).setOrigin(0.5).setVisible(false);
+    }).setOrigin(0.5);
 
     // "Start Game" button (shown during practice)
     this.startGameBtn = this.add.rectangle(GAME_WIDTH / 2, 140, 200, 45, 0x4ecca3, 0.9)
@@ -987,8 +989,22 @@ export class AxeThrowingStage extends BaseStage {
     this.commentaryText.setText('');
 
     this.playerSprite.setVisible(true);
-    this.nickSprite.setVisible(false);
-    this.nickSpriteLabel.setVisible(false);
+
+    // Slide Nick back to spectator position
+    this.tweens.add({
+      targets: this.nickSprite,
+      x: this.nickRestX,
+      y: this.nickRestY,
+      duration: 400,
+      ease: 'Back.easeOut',
+    });
+    this.tweens.add({
+      targets: this.nickSpriteLabel,
+      x: this.nickRestX,
+      y: this.nickRestY - 72,
+      duration: 400,
+      ease: 'Back.easeOut',
+    });
 
     this.drawAimLine();
   }
@@ -1001,8 +1017,22 @@ export class AxeThrowingStage extends BaseStage {
     this.instructionText.setText("Nick's turn...");
 
     this.playerSprite.setVisible(false);
-    this.nickSprite.setVisible(true);
-    this.nickSpriteLabel.setVisible(true);
+
+    // Slide Nick to the throwing position
+    this.tweens.add({
+      targets: this.nickSprite,
+      x: PLAYER_THROW_X,
+      y: PLAYER_THROW_Y + 100,
+      duration: 400,
+      ease: 'Back.easeOut',
+    });
+    this.tweens.add({
+      targets: this.nickSpriteLabel,
+      x: PLAYER_THROW_X,
+      y: PLAYER_THROW_Y + 28,
+      duration: 400,
+      ease: 'Back.easeOut',
+    });
 
     const commentary = NICK_COMMENTARY[this.currentRound - 1] ||
       NICK_COMMENTARY[Phaser.Math.Between(0, NICK_COMMENTARY.length - 1)];

@@ -4,12 +4,30 @@ import { BaseStage } from './BaseStage.js';
 import { DialogueSystem } from '../systems/DialogueSystem.js';
 import { SoundFX } from '../systems/SoundFX.js';
 
-// Room grid
+// Room grid — house floorplan layout
 const GRID_COLS = 8;
 const GRID_ROWS = 6;
 const CELL_SIZE = 64;
 const GRID_X = 340;
 const GRID_Y = 130;
+
+// Room zones define areas of the floorplan
+// Each zone has a name, grid bounds, color tint, and matching item categories
+const ROOM_ZONES = [
+  { name: 'Kitchen',     col: 0, row: 0, w: 4, h: 3, color: 0x8B6914, items: ['baking'] },
+  { name: 'Living Room', col: 4, row: 0, w: 4, h: 3, color: 0x3d5a3d, items: ['plants'] },
+  { name: 'Closet',      col: 0, row: 3, w: 3, h: 3, color: 0x5a3d5a, items: ['bags', 'jackets', 'scarves'] },
+  { name: 'Bedroom',     col: 3, row: 3, w: 5, h: 3, color: 0x3d4a6a, items: ['plants'] },
+];
+
+// Map item IDs to their category for zone matching
+function getItemCategory(id) {
+  if (id.startsWith('monstera') || id === 'mini-monstera') return 'plants';
+  if (['birkin','chanel-flap','lv-neverfull','dior-saddle','ysl-envelope'].includes(id)) return 'bags';
+  if (['leather-jacket','denim-jacket','blazer'].includes(id)) return 'jackets';
+  if (['silk-scarf','cashmere-wrap','knit-scarf'].includes(id)) return 'scarves';
+  return 'baking';
+}
 
 // Open box area (left side)
 const BOX_X = 40;
@@ -93,8 +111,11 @@ export class UnpackingStage extends BaseStage {
 
   create() {
     this.sfx = new SoundFX(this);
-    this.sfx.startMusic();
+    this.sfx.startCozyMusic();
     this.events.on('shutdown', () => this.sfx.destroy());
+
+    // Scoring
+    this.cozyScore = 0;
 
     // State
     this.grid = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
@@ -174,22 +195,165 @@ export class UnpackingStage extends BaseStage {
   }
 
   createBackground() {
-    // Warm apartment background
-    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x2a1f3d);
+    // Dark base
+    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x1a1520);
 
-    // Wall behind room
-    const roomCenterX = GRID_X + (GRID_COLS * CELL_SIZE) / 2;
-    const roomCenterY = GRID_Y + (GRID_ROWS * CELL_SIZE) / 2;
-    this.add.rectangle(roomCenterX, roomCenterY, GRID_COLS * CELL_SIZE + 30, GRID_ROWS * CELL_SIZE + 30, 0x3d2b1f, 0.5);
+    // House outline
+    const houseG = this.add.graphics();
+    const hx = GRID_X - 8;
+    const hy = GRID_Y - 8;
+    const hw = GRID_COLS * CELL_SIZE + 16;
+    const hh = GRID_ROWS * CELL_SIZE + 16;
+
+    // Outer walls (thick border)
+    houseG.lineStyle(4, 0x8a7a6a, 1);
+    houseG.strokeRect(hx, hy, hw, hh);
+
+    // Room zone fills and dividing walls
+    ROOM_ZONES.forEach(zone => {
+      const zx = GRID_X + zone.col * CELL_SIZE;
+      const zy = GRID_Y + zone.row * CELL_SIZE;
+      const zw = zone.w * CELL_SIZE;
+      const zh = zone.h * CELL_SIZE;
+
+      // Zone floor tint
+      houseG.fillStyle(zone.color, 0.15);
+      houseG.fillRect(zx, zy, zw, zh);
+
+      // Zone border (interior walls)
+      houseG.lineStyle(2, 0x8a7a6a, 0.6);
+      houseG.strokeRect(zx, zy, zw, zh);
+    });
+
+    // Room zone labels
+    this.zoneLabels = [];
+    ROOM_ZONES.forEach(zone => {
+      const cx = GRID_X + (zone.col + zone.w / 2) * CELL_SIZE;
+      const cy = GRID_Y + (zone.row + zone.h / 2) * CELL_SIZE;
+      const label = this.add.text(cx, cy, zone.name, {
+        fontFamily: 'Georgia, serif',
+        fontSize: '13px',
+        color: '#888888',
+        fontStyle: 'italic',
+      }).setOrigin(0.5).setAlpha(0.5).setDepth(1);
+      this.zoneLabels.push(label);
+    });
+
+    // Ambient details container (for "room comes alive" effects)
+    this.ambientGroup = [];
   }
 
   createRoom() {
-    // Room label
-    this.add.text(GRID_X + (GRID_COLS * CELL_SIZE) / 2, GRID_Y - 18, '\uD83C\uDFE0 Your New Home', {
+    // House title
+    this.add.text(GRID_X + (GRID_COLS * CELL_SIZE) / 2, GRID_Y - 22, '\uD83C\uDFE0 Your New Home — Floorplan', {
       fontFamily: 'Georgia, serif',
-      fontSize: '16px',
+      fontSize: '15px',
       color: '#ffd700',
     }).setOrigin(0.5);
+
+    // Cozy score display
+    this.cozyScoreText = this.add.text(GRID_X + GRID_COLS * CELL_SIZE + 10, GRID_Y, 'Cozy: 0', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '14px',
+      color: '#ffd700',
+      fontStyle: 'bold',
+    }).setDepth(10);
+
+    this.cozyMeter = this.add.graphics().setDepth(10);
+    this.drawCozyMeter();
+  }
+
+  drawCozyMeter() {
+    this.cozyMeter.clear();
+    const mx = GRID_X + GRID_COLS * CELL_SIZE + 12;
+    const my = GRID_Y + 25;
+    const mw = 16;
+    const mh = 150;
+
+    // Background
+    this.cozyMeter.fillStyle(0x333333, 0.6);
+    this.cozyMeter.fillRect(mx, my, mw, mh);
+
+    // Fill based on cozy score (max ~100)
+    const maxScore = this.totalItems * 4; // ~100 max
+    const fill = Math.min(this.cozyScore / maxScore, 1);
+    const fillH = fill * mh;
+
+    // Gradient color from cold (blue) to cozy (warm orange)
+    const color = fill > 0.6 ? 0xffa040 : fill > 0.3 ? 0xffd700 : 0x4ecca3;
+    this.cozyMeter.fillStyle(color, 0.9);
+    this.cozyMeter.fillRect(mx, my + mh - fillH, mw, fillH);
+
+    // Border
+    this.cozyMeter.lineStyle(1, 0x666666, 0.8);
+    this.cozyMeter.strokeRect(mx, my, mw, mh);
+
+    this.cozyScoreText.setText(`Cozy: ${this.cozyScore}`);
+  }
+
+  /** Check if an item placed at (col,row) is in its preferred room zone */
+  getZoneBonus(itemId, col, row, shape) {
+    const category = getItemCategory(itemId);
+
+    for (const zone of ROOM_ZONES) {
+      // Check if ALL cells of the item are within this zone
+      const allInZone = shape.every(([c, r]) => {
+        const gc = col + c;
+        const gr = row + r;
+        return gc >= zone.col && gc < zone.col + zone.w &&
+               gr >= zone.row && gr < zone.row + zone.h;
+      });
+
+      if (allInZone && zone.items.includes(category)) {
+        return { bonus: true, zoneName: zone.name };
+      }
+    }
+    return { bonus: false, zoneName: null };
+  }
+
+  /** Add ambient details as milestones are reached */
+  addAmbientDetail() {
+    const milestones = [5, 10, 15, 20, 25];
+    if (!milestones.includes(this.placedCount)) return;
+
+    const g = this.add.graphics().setDepth(0).setAlpha(0);
+    this.ambientGroup.push(g);
+
+    if (this.placedCount === 5) {
+      // Warm glow from kitchen area
+      g.fillStyle(0xffa040, 0.06);
+      g.fillRect(GRID_X, GRID_Y, 4 * CELL_SIZE, 3 * CELL_SIZE);
+    } else if (this.placedCount === 10) {
+      // Window light in living room
+      const wx = GRID_X + 6 * CELL_SIZE;
+      const wy = GRID_Y + 4;
+      g.fillStyle(0xaaccff, 0.08);
+      g.fillRect(wx, wy, CELL_SIZE * 1.5, CELL_SIZE * 0.8);
+      g.lineStyle(2, 0x8a7a6a, 0.4);
+      g.strokeRect(wx, wy, CELL_SIZE * 1.5, CELL_SIZE * 0.8);
+      g.lineBetween(wx + CELL_SIZE * 0.75, wy, wx + CELL_SIZE * 0.75, wy + CELL_SIZE * 0.8);
+    } else if (this.placedCount === 15) {
+      // Rug in bedroom
+      const rx = GRID_X + (4.5) * CELL_SIZE;
+      const ry = GRID_Y + (4) * CELL_SIZE;
+      g.fillStyle(0x8b4a6a, 0.12);
+      g.fillRoundedRect(rx, ry, CELL_SIZE * 3, CELL_SIZE * 1.5, 6);
+    } else if (this.placedCount === 20) {
+      // Warm lamp glow in multiple rooms
+      [[1.5, 1], [6, 4]].forEach(([c, r]) => {
+        const lx = GRID_X + c * CELL_SIZE;
+        const ly = GRID_Y + r * CELL_SIZE;
+        g.fillStyle(0xffd700, 0.06);
+        g.fillCircle(lx, ly, CELL_SIZE * 1.5);
+      });
+    } else if (this.placedCount === 25) {
+      // Final warm overlay - the whole house glows
+      g.fillStyle(0xffa040, 0.04);
+      g.fillRect(GRID_X, GRID_Y, GRID_COLS * CELL_SIZE, GRID_ROWS * CELL_SIZE);
+    }
+
+    // Fade in
+    this.tweens.add({ targets: g, alpha: 1, duration: 1500 });
   }
 
   drawGrid() {
@@ -371,12 +535,16 @@ export class UnpackingStage extends BaseStage {
       this.endDragFromBox(item, icon, label);
     });
 
-    // Nick's comment
-    const comment = NICK_COMMENTS[item.id];
-    if (comment) {
-      this.commentaryText.setText(comment);
-      this.time.delayedCall(3500, () => {
-        if (this.commentaryText && this.commentaryText.text === comment) {
+    // Nick's comment + zone hint
+    const comment = NICK_COMMENTS[item.id] || '';
+    const category = getItemCategory(item.id);
+    const preferredZone = ROOM_ZONES.find(z => z.items.includes(category));
+    const hint = preferredZone ? `  \u2192 Try the ${preferredZone.name}!` : '';
+    const fullComment = comment + hint;
+    if (fullComment) {
+      this.commentaryText.setText(fullComment);
+      this.time.delayedCall(4000, () => {
+        if (this.commentaryText && this.commentaryText.text === fullComment) {
           this.commentaryText.setText('');
         }
       });
@@ -628,9 +796,24 @@ export class UnpackingStage extends BaseStage {
     this.placedCount++;
     this.progressText.setText(`${this.placedCount} / ${this.totalItems} items placed`);
 
-    if (shape.length >= 4) {
+    // Zone scoring
+    const { bonus, zoneName } = this.getZoneBonus(item.id, col, row, shape);
+    if (bonus) {
+      this.cozyScore += 4;
+      this.showPlacementFeedback(placedIcon.x, placedIcon.y, `\u2728 ${zoneName}! +4`, '#4ecca3');
+      this.sfx.cheer();
+    } else {
+      this.cozyScore += 2;
+      this.showPlacementFeedback(placedIcon.x, placedIcon.y, '+2', '#aaaaaa');
+    }
+    this.drawCozyMeter();
+
+    if (shape.length >= 4 && !bonus) {
       this.time.delayedCall(150, () => this.sfx.cheer());
     }
+
+    // Room comes alive at milestones
+    this.addAmbientDetail();
 
     // Update hint after first item placed
     if (this.placedCount === 1) {
@@ -702,6 +885,23 @@ export class UnpackingStage extends BaseStage {
     return placedIcon;
   }
 
+  showPlacementFeedback(x, y, text, color) {
+    const popup = this.add.text(x, y - 20, text, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '16px',
+      color: color,
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(30);
+
+    this.tweens.add({
+      targets: popup,
+      y: y - 60,
+      alpha: 0,
+      duration: 1200,
+      onComplete: () => popup.destroy(),
+    });
+  }
+
   emitDust(centerX, centerY, itemColor) {
     for (let i = 0; i < 8; i++) {
       const dust = this.add.circle(centerX, centerY, Phaser.Math.Between(2, 5),
@@ -762,20 +962,30 @@ export class UnpackingStage extends BaseStage {
 
     this.sfx.victory();
 
+    const maxScore = this.totalItems * 4;
+    const scorePercent = Math.round((this.cozyScore / maxScore) * 100);
+
+    let cozyRating;
+    if (scorePercent >= 80) cozyRating = '\u2B50\u2B50\u2B50 Interior Designer!';
+    else if (scorePercent >= 60) cozyRating = '\u2B50\u2B50 Cozy & Cute!';
+    else if (scorePercent >= 40) cozyRating = '\u2B50 Getting There!';
+    else cozyRating = 'Creative Chaos!';
+
     let coverageComment;
     if (coverage > 70) coverageComment = '"Cozy! ...maybe TOO cozy."';
     else if (coverage > 50) coverageComment = '"Room to breathe AND dance!"';
     else coverageComment = '"Minimalist vibes. Very intentional."';
 
-    const resultBg = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 500, 280, 0x000000, 0.85)
+    const resultBg = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 500, 300, 0x000000, 0.85)
       .setStrokeStyle(2, 0xffd700)
       .setDepth(50)
       .setAlpha(0);
 
-    const resultText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20,
+    const resultText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 30,
       `HOME SWEET HOME!\n\n` +
       `All ${this.totalItems} items unpacked!\n` +
-      `Room coverage: ${coverage}%\n\n` +
+      `Room coverage: ${coverage}%\n` +
+      `Cozy Score: ${this.cozyScore} — ${cozyRating}\n\n` +
       coverageComment,
       {
         fontFamily: 'Georgia, serif',
