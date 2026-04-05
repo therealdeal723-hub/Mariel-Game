@@ -38,59 +38,48 @@ const BOX_CENTER_X = BOX_X + BOX_W / 2;
 const BOX_CENTER_Y = BOX_Y + BOX_H / 2;
 
 // Items — each has a multi-cell shape, color, label, and texture key
+// 18 items, 36 total cells → fits comfortably in 8×6 grid (48 cells, 75% coverage)
 const ITEMS = [
-  // Monsteras
+  // Monsteras (4 plants, 6 cells)
   { id: 'monstera-deliciosa', label: 'Monstera Deliciosa', shape: [[0,0],[0,1]], color: 0x1a8a3e, texture: 'item-monstera-deliciosa' },
-  { id: 'monstera-adansonii', label: 'Swiss Cheese Plant', shape: [[0,0],[0,1]], color: 0x22a848, texture: 'item-monstera-adansonii' },
   { id: 'monstera-thai', label: 'Thai Constellation', shape: [[0,0],[0,1]], color: 0x1a8a3e, texture: 'item-monstera-thai' },
-  { id: 'monstera-albo', label: 'Monstera Albo', shape: [[0,0],[0,1]], color: 0x1a8a3e, texture: 'item-monstera-albo' },
   { id: 'monstera-peru', label: 'Monstera Peru', shape: [[0,0]], color: 0x1a7535, texture: 'item-monstera-peru' },
   { id: 'mini-monstera', label: 'Mini Monstera', shape: [[0,0]], color: 0x2aad50, texture: 'item-mini-monstera' },
 
-  // Designer Bags
+  // Designer Bags (3 bags, 4 cells)
   { id: 'birkin', label: 'Birkin Bag', shape: [[0,0],[1,0]], color: 0xc4874a, texture: 'item-birkin' },
   { id: 'chanel-flap', label: 'Chanel Classic Flap', shape: [[0,0]], color: 0x1a1a1a, texture: 'item-chanel-flap' },
-  { id: 'lv-neverfull', label: 'LV Neverfull', shape: [[0,0],[1,0]], color: 0xc4943a, texture: 'item-lv-neverfull' },
-  { id: 'dior-saddle', label: 'Dior Saddle', shape: [[0,0],[1,0]], color: 0xc4a882, texture: 'item-dior-saddle' },
   { id: 'ysl-envelope', label: 'YSL Envelope', shape: [[0,0]], color: 0x2a2a2a, texture: 'item-ysl-envelope' },
 
-  // Jackets
+  // Jackets (2 jackets, 8 cells)
   { id: 'leather-jacket', label: 'Leather Jacket', shape: [[0,0],[1,0],[0,1],[1,1]], color: 0x1a1a1a, texture: 'item-leather-jacket' },
   { id: 'denim-jacket', label: 'Denim Jacket', shape: [[0,0],[1,0],[0,1],[1,1]], color: 0x4a6a8a, texture: 'item-denim-jacket' },
-  { id: 'blazer', label: 'Blazer', shape: [[0,0],[1,0],[0,1],[1,1]], color: 0x2a2848, texture: 'item-blazer' },
 
-  // Scarves
+  // Scarves (3 scarves, 4 cells)
   { id: 'silk-scarf', label: 'Silk Scarf', shape: [[0,0]], color: 0xc93545, texture: 'item-silk-scarf' },
   { id: 'cashmere-wrap', label: 'Cashmere Wrap', shape: [[0,0],[1,0]], color: 0xe8d5c0, texture: 'item-cashmere-wrap' },
   { id: 'knit-scarf', label: 'Knit Scarf', shape: [[0,0],[0,1]], color: 0xc44040, texture: 'item-knit-scarf' },
 
-  // Baking Equipment
+  // Baking Equipment (6 items, 14 cells)
   { id: 'stand-mixer', label: 'Stand Mixer', shape: [[0,0],[0,1]], color: 0xe04868, texture: 'item-stand-mixer' },
   { id: 'rolling-pin', label: 'Rolling Pin', shape: [[0,0],[1,0]], color: 0xdcc4a0, texture: 'item-rolling-pin' },
   { id: 'whisk', label: 'Whisk', shape: [[0,0]], color: 0xc0c0c0, texture: 'item-whisk' },
   { id: 'mixing-bowls', label: 'Mixing Bowls', shape: [[0,0],[1,0]], color: 0x4a90c8, texture: 'item-mixing-bowls' },
   { id: 'measuring-cups', label: 'Measuring Cups', shape: [[0,0]], color: 0xe0e0e0, texture: 'item-measuring-cups' },
-  { id: 'piping-bag', label: 'Piping Bag', shape: [[0,0]], color: 0xf0ebe0, texture: 'item-piping-bag' },
   { id: 'cake-stand', label: 'Cake Stand', shape: [[0,0],[0,1]], color: 0xf0ebe5, texture: 'item-cake-stand' },
-  { id: 'oven-mitts', label: 'Oven Mitts', shape: [[0,0]], color: 0xe06888, texture: 'item-oven-mitts' },
 ];
 
 // Nick's commentary keyed to item id
 const NICK_COMMENTS = {
   'monstera-deliciosa': '"That one\'s bigger than our apartment."',
-  'monstera-adansonii': '"Why does it have holes? Is it broken?"',
   'monstera-thai': '"This one costs HOW much?!"',
-  'monstera-albo': '"Half green, half white... half the price? No? Okay."',
   'monstera-peru': '"At least this one doesn\'t have holes."',
   'mini-monstera': '"A baby plant! ...it\'ll be 6 feet tall by Tuesday."',
   'birkin': '"Do I want to know how much that costs?"',
   'chanel-flap': '"That bag has its own insurance policy."',
-  'lv-neverfull': '"Neverfull? Challenge accepted."',
-  'dior-saddle': '"It looks like a tiny horse saddle. I love it."',
   'ysl-envelope': '"Very sleek. Very \'I have my life together.\'"',
   'leather-jacket': '"Okay that jacket is actually fire."',
   'denim-jacket': '"Classic. Goes with everything."',
-  'blazer': '"For when we pretend to be fancy."',
   'silk-scarf': '"Very Audrey Hepburn."',
   'cashmere-wrap': '"I will absolutely steal this when it\'s cold."',
   'knit-scarf': '"Cozy season essential."',
@@ -99,9 +88,7 @@ const NICK_COMMENTS = {
   'whisk': '"Whisk me away! ...I\'m sorry."',
   'mixing-bowls': '"One bowl for mixing, two for snacking."',
   'measuring-cups': '"Baking is just science with sugar."',
-  'piping-bag': '"Professional frosting deployment system."',
   'cake-stand': '"Every cake deserves a pedestal."',
-  'oven-mitts': '"Cute AND functional."',
 };
 
 export class UnpackingStage extends BaseStage {
@@ -313,17 +300,17 @@ export class UnpackingStage extends BaseStage {
 
   /** Add ambient details as milestones are reached */
   addAmbientDetail() {
-    const milestones = [5, 10, 15, 20, 25];
+    const milestones = [4, 8, 12, 15, 18];
     if (!milestones.includes(this.placedCount)) return;
 
     const g = this.add.graphics().setDepth(0).setAlpha(0);
     this.ambientGroup.push(g);
 
-    if (this.placedCount === 5) {
+    if (this.placedCount === 4) {
       // Warm glow from kitchen area
       g.fillStyle(0xffa040, 0.06);
       g.fillRect(GRID_X, GRID_Y, 4 * CELL_SIZE, 3 * CELL_SIZE);
-    } else if (this.placedCount === 10) {
+    } else if (this.placedCount === 8) {
       // Window light in living room
       const wx = GRID_X + 6 * CELL_SIZE;
       const wy = GRID_Y + 4;
@@ -332,13 +319,13 @@ export class UnpackingStage extends BaseStage {
       g.lineStyle(2, 0x8a7a6a, 0.4);
       g.strokeRect(wx, wy, CELL_SIZE * 1.5, CELL_SIZE * 0.8);
       g.lineBetween(wx + CELL_SIZE * 0.75, wy, wx + CELL_SIZE * 0.75, wy + CELL_SIZE * 0.8);
-    } else if (this.placedCount === 15) {
+    } else if (this.placedCount === 12) {
       // Rug in bedroom
       const rx = GRID_X + (4.5) * CELL_SIZE;
       const ry = GRID_Y + (4) * CELL_SIZE;
       g.fillStyle(0x8b4a6a, 0.12);
       g.fillRoundedRect(rx, ry, CELL_SIZE * 3, CELL_SIZE * 1.5, 6);
-    } else if (this.placedCount === 20) {
+    } else if (this.placedCount === 15) {
       // Warm lamp glow in multiple rooms
       [[1.5, 1], [6, 4]].forEach(([c, r]) => {
         const lx = GRID_X + c * CELL_SIZE;
@@ -346,7 +333,7 @@ export class UnpackingStage extends BaseStage {
         g.fillStyle(0xffd700, 0.06);
         g.fillCircle(lx, ly, CELL_SIZE * 1.5);
       });
-    } else if (this.placedCount === 25) {
+    } else if (this.placedCount === 18) {
       // Final warm overlay - the whole house glows
       g.fillStyle(0xffa040, 0.04);
       g.fillRect(GRID_X, GRID_Y, GRID_COLS * CELL_SIZE, GRID_ROWS * CELL_SIZE);

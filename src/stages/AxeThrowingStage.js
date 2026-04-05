@@ -988,8 +988,6 @@ export class AxeThrowingStage extends BaseStage {
     );
     this.commentaryText.setText('');
 
-    this.playerSprite.setVisible(true);
-
     // Slide Nick back to spectator position
     this.tweens.add({
       targets: this.nickSprite,
@@ -1005,6 +1003,13 @@ export class AxeThrowingStage extends BaseStage {
       duration: 400,
       ease: 'Back.easeOut',
     });
+    // Move commentary back to Nick's spectator spot
+    this.tweens.add({
+      targets: this.commentaryText,
+      x: this.nickRestX,
+      duration: 400,
+      ease: 'Back.easeOut',
+    });
 
     this.drawAimLine();
   }
@@ -1015,8 +1020,6 @@ export class AxeThrowingStage extends BaseStage {
     this.aimCrosshair.setVisible(false);
     this.aimLine.setVisible(false);
     this.instructionText.setText("Nick's turn...");
-
-    this.playerSprite.setVisible(false);
 
     // Slide Nick to the throwing position
     this.tweens.add({
@@ -1030,6 +1033,13 @@ export class AxeThrowingStage extends BaseStage {
       targets: this.nickSpriteLabel,
       x: PLAYER_THROW_X,
       y: PLAYER_THROW_Y + 28,
+      duration: 400,
+      ease: 'Back.easeOut',
+    });
+    // Move commentary near Nick's throwing position
+    this.tweens.add({
+      targets: this.commentaryText,
+      x: PLAYER_THROW_X,
       duration: 400,
       ease: 'Back.easeOut',
     });
