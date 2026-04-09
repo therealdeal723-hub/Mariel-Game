@@ -298,49 +298,118 @@ export class UnpackingStage extends BaseStage {
     return { bonus: false, zoneName: null };
   }
 
-  /** Add ambient details as milestones are reached */
+  /** Add visible decorations as milestones are reached */
   addAmbientDetail() {
     const milestones = [4, 8, 12, 15, 18];
     if (!milestones.includes(this.placedCount)) return;
 
-    const g = this.add.graphics().setDepth(0).setAlpha(0);
-    this.ambientGroup.push(g);
-
     if (this.placedCount === 4) {
-      // Warm glow from kitchen area
-      g.fillStyle(0xffa040, 0.06);
-      g.fillRect(GRID_X, GRID_Y, 4 * CELL_SIZE, 3 * CELL_SIZE);
-    } else if (this.placedCount === 8) {
-      // Window light in living room
-      const wx = GRID_X + 6 * CELL_SIZE;
-      const wy = GRID_Y + 4;
-      g.fillStyle(0xaaccff, 0.08);
-      g.fillRect(wx, wy, CELL_SIZE * 1.5, CELL_SIZE * 0.8);
-      g.lineStyle(2, 0x8a7a6a, 0.4);
-      g.strokeRect(wx, wy, CELL_SIZE * 1.5, CELL_SIZE * 0.8);
-      g.lineBetween(wx + CELL_SIZE * 0.75, wy, wx + CELL_SIZE * 0.75, wy + CELL_SIZE * 0.8);
-    } else if (this.placedCount === 12) {
-      // Rug in bedroom
-      const rx = GRID_X + (4.5) * CELL_SIZE;
-      const ry = GRID_Y + (4) * CELL_SIZE;
-      g.fillStyle(0x8b4a6a, 0.12);
-      g.fillRoundedRect(rx, ry, CELL_SIZE * 3, CELL_SIZE * 1.5, 6);
-    } else if (this.placedCount === 15) {
-      // Warm lamp glow in multiple rooms
-      [[1.5, 1], [6, 4]].forEach(([c, r]) => {
-        const lx = GRID_X + c * CELL_SIZE;
-        const ly = GRID_Y + r * CELL_SIZE;
-        g.fillStyle(0xffd700, 0.06);
-        g.fillCircle(lx, ly, CELL_SIZE * 1.5);
-      });
-    } else if (this.placedCount === 18) {
-      // Final warm overlay - the whole house glows
-      g.fillStyle(0xffa040, 0.04);
-      g.fillRect(GRID_X, GRID_Y, GRID_COLS * CELL_SIZE, GRID_ROWS * CELL_SIZE);
-    }
+      // Kitchen gets overhead light
+      const lx = GRID_X + 2 * CELL_SIZE;
+      const ly = GRID_Y - 5;
+      const light = this.add.text(lx, ly, '\uD83D\uDCA1', { fontSize: '20px' })
+        .setOrigin(0.5).setDepth(2).setAlpha(0);
+      this.ambientGroup.push(light);
+      this.tweens.add({ targets: light, alpha: 1, duration: 800 });
+      // Warm glow circle under the light
+      const glow = this.add.graphics().setDepth(1).setAlpha(0);
+      glow.fillStyle(0xffa040, 0.25);
+      glow.fillCircle(lx, GRID_Y + 1.5 * CELL_SIZE, CELL_SIZE * 2);
+      this.ambientGroup.push(glow);
+      this.tweens.add({ targets: glow, alpha: 1, duration: 1500 });
 
-    // Fade in
-    this.tweens.add({ targets: g, alpha: 1, duration: 1500 });
+    } else if (this.placedCount === 8) {
+      // Living room gets a window with curtains
+      const wx = GRID_X + 6 * CELL_SIZE;
+      const wy = GRID_Y + 2;
+      const win = this.add.graphics().setDepth(2).setAlpha(0);
+      // Window frame
+      win.fillStyle(0xaaddff, 0.6);
+      win.fillRect(wx, wy, CELL_SIZE * 1.5, CELL_SIZE);
+      win.lineStyle(3, 0x8a7a6a, 1);
+      win.strokeRect(wx, wy, CELL_SIZE * 1.5, CELL_SIZE);
+      win.lineBetween(wx + CELL_SIZE * 0.75, wy, wx + CELL_SIZE * 0.75, wy + CELL_SIZE);
+      win.lineBetween(wx, wy + CELL_SIZE * 0.5, wx + CELL_SIZE * 1.5, wy + CELL_SIZE * 0.5);
+      this.ambientGroup.push(win);
+      this.tweens.add({ targets: win, alpha: 1, duration: 1000 });
+      // Sunlight streaming in
+      const sun = this.add.graphics().setDepth(1).setAlpha(0);
+      sun.fillStyle(0xffeebb, 0.2);
+      sun.fillTriangle(wx, wy + CELL_SIZE, wx + CELL_SIZE * 1.5, wy + CELL_SIZE,
+        wx + CELL_SIZE * 0.75, wy + CELL_SIZE * 2.5);
+      this.ambientGroup.push(sun);
+      this.tweens.add({ targets: sun, alpha: 1, duration: 2000 });
+
+    } else if (this.placedCount === 12) {
+      // Bedroom gets a cozy rug
+      const rx = GRID_X + 4 * CELL_SIZE + 16;
+      const ry = GRID_Y + 4 * CELL_SIZE;
+      const rug = this.add.graphics().setDepth(1).setAlpha(0);
+      // Rug body
+      rug.fillStyle(0x9b5a7a, 0.7);
+      rug.fillRoundedRect(rx, ry, CELL_SIZE * 3.5, CELL_SIZE * 1.5, 8);
+      // Rug border pattern
+      rug.lineStyle(3, 0xdaa520, 0.8);
+      rug.strokeRoundedRect(rx + 5, ry + 5, CELL_SIZE * 3.5 - 10, CELL_SIZE * 1.5 - 10, 6);
+      // Inner decorative line
+      rug.lineStyle(1, 0xdaa520, 0.5);
+      rug.strokeRoundedRect(rx + 10, ry + 10, CELL_SIZE * 3.5 - 20, CELL_SIZE * 1.5 - 20, 4);
+      this.ambientGroup.push(rug);
+      this.tweens.add({ targets: rug, alpha: 1, duration: 1200 });
+
+    } else if (this.placedCount === 15) {
+      // Lamps appear in multiple rooms
+      const lampPositions = [
+        [GRID_X + 3.5 * CELL_SIZE, GRID_Y + 2.5 * CELL_SIZE],
+        [GRID_X + 7.5 * CELL_SIZE, GRID_Y + 5 * CELL_SIZE],
+      ];
+      lampPositions.forEach(([lx, ly]) => {
+        const lamp = this.add.text(lx, ly, '\uD83D\uDECB\uFE0F', { fontSize: '24px' })
+          .setOrigin(0.5).setDepth(2).setAlpha(0);
+        this.ambientGroup.push(lamp);
+        this.tweens.add({ targets: lamp, alpha: 1, duration: 800 });
+        // Warm glow
+        const glow = this.add.graphics().setDepth(1).setAlpha(0);
+        glow.fillStyle(0xffd700, 0.15);
+        glow.fillCircle(lx, ly, CELL_SIZE * 1.2);
+        this.ambientGroup.push(glow);
+        this.tweens.add({ targets: glow, alpha: 1, duration: 1500 });
+      });
+
+    } else if (this.placedCount === 18) {
+      // Final: whole house gets warm, fairy lights across top, "HOME" text
+      const warmth = this.add.graphics().setDepth(1).setAlpha(0);
+      warmth.fillStyle(0xffa040, 0.15);
+      warmth.fillRect(GRID_X, GRID_Y, GRID_COLS * CELL_SIZE, GRID_ROWS * CELL_SIZE);
+      this.ambientGroup.push(warmth);
+      this.tweens.add({ targets: warmth, alpha: 1, duration: 2000 });
+
+      // Fairy lights along the top wall
+      const lights = this.add.graphics().setDepth(2).setAlpha(0);
+      const bulbColors = [0xffd700, 0xff6b6b, 0x4ecca3, 0x6bb5ff, 0xffa040];
+      for (let x = GRID_X + 15; x < GRID_X + GRID_COLS * CELL_SIZE - 10; x += 25) {
+        const bc = bulbColors[Math.floor(x / 25) % bulbColors.length];
+        lights.fillStyle(bc, 0.8);
+        lights.fillCircle(x, GRID_Y + 5, 4);
+        lights.fillStyle(bc, 0.2);
+        lights.fillCircle(x, GRID_Y + 5, 8);
+      }
+      // Wire
+      lights.lineStyle(1, 0x666666, 0.6);
+      lights.lineBetween(GRID_X, GRID_Y + 5, GRID_X + GRID_COLS * CELL_SIZE, GRID_Y + 5);
+      this.ambientGroup.push(lights);
+      this.tweens.add({ targets: lights, alpha: 1, duration: 1500 });
+
+      // "Home Sweet Home" text
+      const homeText = this.add.text(
+        GRID_X + (GRID_COLS * CELL_SIZE) / 2,
+        GRID_Y + GRID_ROWS * CELL_SIZE + 15,
+        '\u2728 Home Sweet Home \u2728',
+        { fontFamily: 'Georgia, serif', fontSize: '18px', color: '#ffd700', fontStyle: 'bold' }
+      ).setOrigin(0.5).setDepth(10).setAlpha(0);
+      this.ambientGroup.push(homeText);
+      this.tweens.add({ targets: homeText, alpha: 1, duration: 2000 });
+    }
   }
 
   drawGrid() {
